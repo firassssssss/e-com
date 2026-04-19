@@ -1,0 +1,742 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Syncopate:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ════════════════════════════════════════
+   DARK MODE
+   ════════════════════════════════════════ */
+:root,
+[data-theme="dark"] {
+  --amber:        #FF5F1F;
+  --amber-soft:   #F89880;
+  --amber-honey:  rgba(255, 95, 31, 0.15);
+  --cyan:         #00FFFF;
+  --cyan-soft:    #23D5D5;
+  --cyan-glass:   rgba(0, 255, 255, 0.08);
+
+  --bg-primary:    #0C0804;
+  --bg-secondary:  #100B05;
+  --bg-card:       rgba(255, 180, 80, 0.04);
+  --border:        rgba(255, 160, 60, 0.09);
+  --border-hover:  rgba(248, 152, 128, 0.4);
+
+  --text-primary:   #FFF3E8;
+  --text-secondary: rgba(255, 243, 232, 0.55);
+  --text-muted:     rgba(255, 243, 232, 0.3);
+
+  --nav-bg:         rgba(12, 8, 4, 0.95);
+  --nav-link:       rgba(255, 243, 232, 0.55);
+  --nav-link-hover: #00FFFF;
+
+  --input-bg:     rgba(255, 180, 60, 0.04);
+  --input-border: rgba(255, 160, 60, 0.1);
+
+  --scrollbar-track: #0C0804;
+  --grain-opacity:   0.32;
+
+  --admin-bg:      #0D0905;
+  --admin-surface: #131008;
+  --admin-border:  rgba(255, 160, 60, 0.1);
+  --admin-text:    rgba(255, 243, 232, 0.75);
+
+  --chat-bg:          #100B05;
+  --chat-user-bg:     rgba(255, 95, 31, 0.2);
+  --chat-user-border: rgba(255, 95, 31, 0.3);
+  --chat-bot-bg:      rgba(255, 180, 80, 0.05);
+  --chat-bot-border:  rgba(255, 160, 60, 0.08);
+
+  /* Aurora blobs — dark: jewel tones */
+  --aurora-1: rgba(255,  50, 120, 0.12);
+  --aurora-2: rgba( 70,  20, 255, 0.10);
+  --aurora-3: rgba(  0, 220, 200, 0.09);
+  --aurora-4: rgba(255, 140,   0, 0.10);
+  --aurora-5: rgba(120,   0, 255, 0.08);
+  --aurora-6: rgba(  0, 180, 100, 0.07);
+
+  --dark:        #0C0804;
+  --dark-2:      #100B05;
+  --dark-card:   rgba(255, 180, 80, 0.04);
+  --dark-border: rgba(255, 160, 60, 0.09);
+}
+
+/* ════════════════════════════════════════
+   LIGHT MODE
+   ════════════════════════════════════════ */
+[data-theme="light"] {
+  --amber:        #C94200;
+  --amber-soft:   #B85535;
+  --amber-honey:  rgba(201, 66, 0, 0.07);
+  --cyan:         #0276B1;
+  --cyan-soft:    #025F8C;
+  --cyan-glass:   rgba(2, 118, 177, 0.06);
+
+  --bg-primary:    #FBF6EE;
+  --bg-secondary:  #F3EBE0;
+  --bg-card:       #FFFAF4;
+  --border:        rgba(120, 60, 20, 0.1);
+  --border-hover:  rgba(201, 66, 0, 0.25);
+
+  --text-primary:   #1E1208;
+  --text-secondary: rgba(30, 18, 8, 0.6);
+  --text-muted:     rgba(30, 18, 8, 0.38);
+
+  --nav-bg:         rgba(251, 246, 238, 0.97);
+  --nav-link:       rgba(30, 18, 8, 0.5);
+  --nav-link-hover: #C94200;
+
+  --input-bg:     #FFFAF4;
+  --input-border: rgba(120, 60, 20, 0.12);
+
+  --scrollbar-track: #F3EBE0;
+  --grain-opacity:   0.07;
+
+  --admin-bg:      #F5EDE2;
+  --admin-surface: #FFFAF4;
+  --admin-border:  rgba(120, 60, 20, 0.1);
+  --admin-text:    rgba(30, 18, 8, 0.75);
+
+  --chat-bg:          #FFFAF4;
+  --chat-user-bg:     rgba(201, 66, 0, 0.07);
+  --chat-user-border: rgba(201, 66, 0, 0.16);
+  --chat-bot-bg:      #F5EDE2;
+  --chat-bot-border:  rgba(120, 60, 20, 0.08);
+
+  /* Aurora blobs — light: soft pastels, slightly stronger */
+  --aurora-1: rgba(255,  80, 150, 0.15);
+  --aurora-2: rgba(100,  60, 255, 0.12);
+  --aurora-3: rgba(  0, 200, 180, 0.11);
+  --aurora-4: rgba(255, 160,  20, 0.13);
+  --aurora-5: rgba(160,  40, 255, 0.10);
+  --aurora-6: rgba( 20, 200, 120, 0.10);
+
+  --dark:        #FBF6EE;
+  --dark-2:      #F3EBE0;
+  --dark-card:   #FFFAF4;
+  --dark-border: rgba(120, 60, 20, 0.1);
+}
+
+/* ════════════════════════════════════════
+   SHARED TOKENS
+   ════════════════════════════════════════ */
+:root {
+  --font-display: 'Cormorant Garamond', serif;
+  --font-label:   'Syncopate', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+  --ease-expo:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth:  cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-sm:    2px;
+  --radius-pill:  999px;
+}
+
+/* ════════════════════════════════════════
+   BASE
+   ════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; background: var(--bg-primary); }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ════════════════════════════════════════
+   SMOOTH THEME TRANSITION
+   ════════════════════════════════════════ */
+html, body, body * {
+  transition: background-color 0.4s ease, border-color 0.4s ease,
+              color 0.4s ease, box-shadow 0.4s ease;
+}
+* { transition-property: background-color, border-color, color, box-shadow; }
+
+/* ════════════════════════════════════════
+   RAINBOW AURORA
+   Usage: add  aurora-bg  class to any section,
+   then put  <span className="aurora-layer" aria-hidden="true" />
+   as first child inside it.
+   ════════════════════════════════════════ */
+@keyframes auroraA {
+  0%   { transform: translate(  0%,   0%) scale(1);    }
+  20%  { transform: translate( 12%,  -8%) scale(1.10); }
+  40%  { transform: translate( -6%,  14%) scale(0.92); }
+  60%  { transform: translate(-14%,   4%) scale(1.05); }
+  80%  { transform: translate(  6%, -12%) scale(1.08); }
+  100% { transform: translate(  0%,   0%) scale(1);    }
+}
+@keyframes auroraB {
+  0%   { transform: translate(  0%,   0%) scale(1.05); }
+  25%  { transform: translate(-10%,  10%) scale(0.90); }
+  50%  { transform: translate( 14%,  -6%) scale(1.10); }
+  75%  { transform: translate( -4%, -14%) scale(0.95); }
+  100% { transform: translate(  0%,   0%) scale(1.05); }
+}
+@keyframes auroraC {
+  0%   { transform: translate(  5%,  -5%) scale(1);    }
+  33%  { transform: translate(-12%,   8%) scale(1.12); }
+  66%  { transform: translate(  8%,  12%) scale(0.88); }
+  100% { transform: translate(  5%,  -5%) scale(1);    }
+}
+@keyframes auroraD {
+  0%   { transform: translate( -5%,   5%) scale(0.95); }
+  30%  { transform: translate( 10%, -10%) scale(1.08); }
+  60%  { transform: translate( -8%,  14%) scale(1.00); }
+  100% { transform: translate( -5%,   5%) scale(0.95); }
+}
+@keyframes auroraE {
+  0%   { transform: translate(  8%,   2%) scale(1.08); }
+  40%  { transform: translate( -6%, -12%) scale(0.92); }
+  70%  { transform: translate( 14%,   8%) scale(1.04); }
+  100% { transform: translate(  8%,   2%) scale(1.08); }
+}
+@keyframes auroraF {
+  0%   { transform: translate( -3%,  -8%) scale(1);    }
+  50%  { transform: translate( 10%,  10%) scale(1.12); }
+  100% { transform: translate( -3%,  -8%) scale(1);    }
+}
+/* Each blob hue-rotates at its own speed = constant rainbow shift */
+@keyframes hueA { from { filter: blur(72px) hue-rotate(  0deg); } to { filter: blur(72px) hue-rotate(360deg); } }
+@keyframes hueB { from { filter: blur(88px) hue-rotate(120deg); } to { filter: blur(88px) hue-rotate(480deg); } }
+@keyframes hueC { from { filter: blur(80px) hue-rotate(240deg); } to { filter: blur(80px) hue-rotate(600deg); } }
+@keyframes hueD { from { filter: blur(76px) hue-rotate( 60deg); } to { filter: blur(76px) hue-rotate(420deg); } }
+@keyframes hueE { from { filter: blur(84px) hue-rotate(180deg); } to { filter: blur(84px) hue-rotate(540deg); } }
+@keyframes hueF { from { filter: blur(92px) hue-rotate(300deg); } to { filter: blur(92px) hue-rotate(660deg); } }
+
+.aurora-bg {
+  position: relative;
+  overflow: hidden;
+}
+/* The layer holds all 6 blobs — stretched 20% past edges so no hard clips */
+.aurora-layer {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  z-index: 0;
+}
+.aurora-layer > span {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform, filter;
+}
+/* Blob positions & individual animation pairs */
+.aurora-layer > span:nth-child(1) {
+  width: 55%; height: 55%; top: 5%; left: 0%;
+  background: radial-gradient(ellipse, var(--aurora-1), transparent 70%);
+  animation: auroraA 20s ease-in-out infinite, hueA 28s linear infinite;
+}
+.aurora-layer > span:nth-child(2) {
+  width: 50%; height: 50%; top: 0%; right: 5%;
+  background: radial-gradient(ellipse, var(--aurora-2), transparent 70%);
+  animation: auroraB 17s ease-in-out infinite, hueB 32s linear infinite;
+}
+.aurora-layer > span:nth-child(3) {
+  width: 45%; height: 45%; top: 30%; left: 30%;
+  background: radial-gradient(ellipse, var(--aurora-3), transparent 70%);
+  animation: auroraC 24s ease-in-out infinite, hueC 26s linear infinite;
+}
+.aurora-layer > span:nth-child(4) {
+  width: 50%; height: 50%; bottom: 0%; left: 5%;
+  background: radial-gradient(ellipse, var(--aurora-4), transparent 70%);
+  animation: auroraD 21s ease-in-out infinite, hueD 34s linear infinite;
+}
+.aurora-layer > span:nth-child(5) {
+  width: 45%; height: 45%; bottom: 5%; right: 0%;
+  background: radial-gradient(ellipse, var(--aurora-5), transparent 70%);
+  animation: auroraE 19s ease-in-out infinite, hueE 30s linear infinite;
+}
+.aurora-layer > span:nth-child(6) {
+  width: 40%; height: 40%; top: 40%; left: 5%;
+  background: radial-gradient(ellipse, var(--aurora-6), transparent 70%);
+  animation: auroraF 26s ease-in-out infinite, hueF 22s linear infinite;
+}
+/* Content always floats above aurora */
+.aurora-bg > *:not(.aurora-layer) { position: relative; z-index: 1; }
+
+/* ════════════════════════════════════════
+   CUSTOM CURSOR
+   ════════════════════════════════════════ */
+[data-theme="dark"] body { cursor: none; }
+[data-theme="light"] body { cursor: auto; }
+
+.cursor {
+  position: fixed; width: 12px; height: 12px;
+  background: var(--cyan); border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: background 0.3s, width 0.25s, height 0.25s;
+  mix-blend-mode: screen;
+}
+.cursor-ring {
+  position: fixed; width: 40px; height: 40px;
+  border: 1px solid rgba(0, 255, 255, 0.35); border-radius: 50%;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: border-color 0.3s;
+}
+.cursor--hover     { width: 20px; height: 20px; background: var(--amber); }
+.cursor-ring--hover { border-color: rgba(255, 95, 31, 0.5); }
+[data-theme="light"] .cursor,
+[data-theme="light"] .cursor-ring { display: none !important; }
+
+/* ════════════════════════════════════════
+   TYPOGRAPHY
+   ════════════════════════════════════════ */
+.font-display { font-family: var(--font-display); }
+.font-label   { font-family: var(--font-label); }
+.font-body    { font-family: var(--font-body); }
+.text-amber      { color: var(--amber); }
+.text-amber-soft { color: var(--amber-soft); }
+.text-cyan       { color: var(--cyan); }
+.text-cyan-soft  { color: var(--cyan-soft); }
+.eyebrow {
+  font-family: var(--font-label); font-size: 0.6rem;
+  letter-spacing: 0.4em; text-transform: uppercase; color: var(--amber);
+}
+
+/* ════════════════════════════════════════
+   BUTTONS
+   ════════════════════════════════════════ */
+.btn {
+  font-family: var(--font-label); font-size: 0.65rem; letter-spacing: 0.2em;
+  text-transform: uppercase; cursor: pointer; transition: all 0.3s; border: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.btn::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: translateX(-100%); transition: transform 0.6s;
+}
+.btn:hover::before { transform: translateX(100%); }
+.btn-primary { background: var(--amber); color: #fff; padding: 1rem 2.5rem; }
+.btn-primary:hover { filter: brightness(1.1); box-shadow: 0 0 40px rgba(255,95,31,0.3); }
+.btn-outline-amber {
+  background: transparent; color: var(--amber);
+  border: 1px solid var(--amber); padding: 1rem 2.5rem;
+}
+.btn-outline-amber:hover { background: var(--amber-honey); }
+
+/* ════════════════════════════════════════
+   CARDS
+   ════════════════════════════════════════ */
+.card-glass {
+  background: var(--bg-card); border: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+}
+.card-glass:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  transform: translateY(-4px);
+}
+.product-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.product-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--amber-soft), transparent);
+  opacity: 0; transition: opacity 0.3s;
+}
+.product-card:hover::before { opacity: 1; }
+.product-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 0 30px rgba(255,95,31,0.07), 0 20px 40px rgba(0,0,0,0.08);
+  transform: translateY(-6px);
+}
+
+/* ════════════════════════════════════════
+   FORMS
+   ════════════════════════════════════════ */
+.form-field {
+  background: var(--input-bg); border: 1px solid var(--input-border);
+  color: var(--text-primary); font-family: var(--font-body);
+  font-size: 0.9rem; padding: 1rem 1.2rem; width: 100%;
+  outline: none; border-radius: var(--radius-sm);
+}
+.form-field:focus { border-color: var(--cyan); box-shadow: 0 0 20px var(--cyan-glass); }
+.form-field::placeholder { color: var(--text-muted); }
+.form-label {
+  font-family: var(--font-label); font-size: 0.6rem;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 0.5rem; display: block;
+}
+
+/* ════════════════════════════════════════
+   GRAIN OVERLAY
+   ════════════════════════════════════════ */
+.grain-overlay {
+  position: fixed; inset: 0; pointer-events: none; z-index: 1000;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* ════════════════════════════════════════
+   PILL / TAG
+   ════════════════════════════════════════ */
+.pill {
+  font-size: 0.7rem; letter-spacing: 0.1em; padding: 0.4rem 1rem;
+  border-radius: var(--radius-pill); border: 1px solid; cursor: pointer; display: inline-block;
+}
+.pill-cyan  { border-color: var(--cyan-soft);  color: var(--cyan-soft); }
+.pill-amber { border-color: var(--amber-soft); color: var(--amber-soft); }
+.pill-cyan:hover  { background: var(--cyan-glass);  border-color: var(--cyan); }
+.pill-amber:hover { background: var(--amber-honey); border-color: var(--amber); }
+
+/* ════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+   ════════════════════════════════════════ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.animate-fade-up { animation: fadeUp 1s var(--ease-expo) forwards; opacity: 0; }
+.animate-fade-in { animation: fadeIn 0.5s ease forwards; }
+.animate-delay-1 { animation-delay: 0.2s; }
+.animate-delay-2 { animation-delay: 0.4s; }
+.animate-delay-3 { animation-delay: 0.6s; }
+.animate-delay-4 { animation-delay: 0.8s; }
+.delay-100 { animation-delay: 0.1s; opacity: 0; }
+.delay-200 { animation-delay: 0.2s; opacity: 0; }
+.delay-300 { animation-delay: 0.3s; opacity: 0; }
+.delay-400 { animation-delay: 0.4s; opacity: 0; }
+
+/* ════════════════════════════════════════
+   ADMIN OVERRIDES
+   ════════════════════════════════════════ */
+.admin-layout { scroll-snap-type: none; cursor: default; }
+.admin-layout .cursor, .admin-layout .cursor-ring { display: none !important; }
+
+.admin-nav-item {
+  font-family: var(--font-label); font-size: 0.6rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--admin-text); padding: 0.85rem 2rem;
+  display: flex; align-items: center; gap: 0.8rem;
+  text-decoration: none; border-left: 2px solid transparent;
+}
+.admin-nav-item:hover {
+  color: var(--text-primary); background: rgba(128,80,20,0.06);
+  border-left-color: var(--amber);
+}
+.admin-nav-item.active {
+  color: var(--amber); border-left-color: var(--amber);
+  background: rgba(255, 95, 31, 0.06);
+}
+.admin-stat-card {
+  background: var(--admin-surface); border: 1px solid var(--admin-border);
+  padding: 1.5rem 2rem;
+}
+.admin-stat-card:hover { border-color: rgba(255,95,31,0.2); }
+.admin-stat-value {
+  font-family: var(--font-display); font-size: 2.2rem;
+  font-weight: 300; color: var(--amber); line-height: 1; margin-bottom: 0.3rem;
+}
+.admin-stat-label {
+  font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th {
+  font-family: var(--font-label); font-size: 0.55rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--text-muted); padding: 1rem 1.5rem;
+  text-align: left; border-bottom: 1px solid var(--admin-border);
+}
+.admin-table td {
+  padding: 1rem 1.5rem; font-size: 0.85rem; color: var(--admin-text);
+  border-bottom: 1px solid rgba(128,80,20,0.06); vertical-align: middle;
+}
+.admin-table tr:hover td { background: rgba(128,80,20,0.03); }
+.admin-table .badge-amber {
+  font-family: var(--font-label); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--amber);
+  border: 1px solid rgba(255,95,31,0.3); padding: 0.2rem 0.6rem;
+}
+.admin-table .badge-cyan {
+  font-family: var(--font-label); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--cyan-soft);
+  border: 1px solid rgba(35,213,213,0.3); padding: 0.2rem 0.6rem;
+}
+.admin-table .badge-muted {
+  font-size: 0.55rem; color: var(--text-muted);
+  border: 1px solid rgba(128,80,20,0.15); padding: 0.2rem 0.6rem;
+}
+
+/* ════════════════════════════════════════
+   SCROLLBAR
+   ════════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--cyan), var(--amber));
+  border-radius: 2px;
+}
+/* ════════════════════════════════════════
+   INFINITE MARQUEE SCROLL
+   Usage: wrap items in .marquee-track inside .marquee-container
+   ════════════════════════════════════════ */
+
+@keyframes marqueeScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes marqueeScrollReverse {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
+.marquee-container {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  /* Soft fade edges */
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+}
+
+.marquee-track {
+  display: flex;
+  gap: 1.5rem;
+  width: max-content;
+  animation: marqueeScroll 35s linear infinite;
+  will-change: transform;
+}
+
+/* Pause on hover */
+.marquee-container:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Slower variant */
+.marquee-track--slow {
+  animation-duration: 55s;
+}
+
+/* Faster variant */
+.marquee-track--fast {
+  animation-duration: 20s;
+}
+
+/* ════════════════════════════════════════
+   CRYSTAL CARD
+   Drop .crystal-card on any product card div.
+   Works in dark + light mode via CSS vars.
+   ════════════════════════════════════════ */
+
+.crystal-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2px;
+
+  /* Glass body */
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+
+  /* Iridescent rim — shifts colour per hue-rotate below */
+  border: 1px solid transparent;
+  background-clip: padding-box;
+
+  /* Layered border trick: gradient border via outline offset */
+  outline: 1px solid rgba(255, 160, 80, 0.12);
+  outline-offset: -1px;
+
+  transition:
+    transform        0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow       0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    outline-color    0.3s ease,
+    backdrop-filter  0.3s ease;
+}
+
+/* Light-mode crystal: warmer, brighter glass */
+[data-theme="light"] .crystal-card {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  outline: 1px solid rgba(120, 60, 20, 0.14);
+}
+
+/* ── Internal light-streak (prismatic sheen) ── */
+.crystal-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+
+  /* Diagonal light sweep across the face */
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0)   0%,
+    rgba(255, 255, 255, 0.04) 30%,
+    rgba(255, 200, 120, 0.06) 50%,
+    rgba(200, 180, 255, 0.04) 70%,
+    rgba(255, 255, 255, 0)   100%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.6s ease;
+  transform: translateX(-40%) skewX(-12deg);
+}
+
+[data-theme="light"] .crystal-card::before {
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0)    0%,
+    rgba(255, 255, 255, 0.35) 35%,
+    rgba(255, 210, 150, 0.18) 55%,
+    rgba(210, 190, 255, 0.12) 75%,
+    rgba(255, 255, 255, 0)   100%
+  );
+}
+
+.crystal-card:hover::before {
+  opacity: 1;
+  transform: translateX(60%) skewX(-12deg);
+  transition: opacity 0.1s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Top edge specular highlight ── */
+.crystal-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 200, 160, 0.5) 30%,
+    rgba(200, 220, 255, 0.5) 70%,
+    transparent
+  );
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.3s;
+}
+
+.crystal-card:hover::after {
+  opacity: 1;
+}
+
+/* ── Hover lift + prismatic glow ── */
+.crystal-card:hover {
+  transform: translateY(-8px) scale(1.012);
+  outline-color: rgba(248, 152, 128, 0.45);
+  box-shadow:
+    0 0  0    1px  rgba(200, 180, 255, 0.12),
+    0 8px 20px     rgba(0,   0,   0,   0.18),
+    0 20px 50px    rgba(0,   0,   0,   0.12),
+    0 0  30px      rgba(255, 95,  31,  0.07),
+    inset 0 1px 0  rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .crystal-card:hover {
+  box-shadow:
+    0 0  0    1px  rgba(201, 66, 0, 0.20),
+    0 8px 20px     rgba(0,   0,  0, 0.10),
+    0 20px 50px    rgba(0,   0,  0, 0.07),
+    0 0  30px      rgba(201, 66, 0, 0.05),
+    inset 0 1px 0  rgba(255, 255, 255, 0.7);
+}
+
+/* ── Depth layer — bottom inner shadow for depth ── */
+.crystal-card__depth {
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 60px;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.08),
+    transparent
+  );
+}
+
+[data-theme="light"] .crystal-card__depth {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.03),
+    transparent
+  );
+}
+
+/* ════════════════════════════════════════
+   MARQUEE CARD WIDTH  (inside marquee only)
+   ════════════════════════════════════════ */
+.marquee-card {
+  width: 240px;
+  flex-shrink: 0;
+}
+/* ════════════════════════════════════════
+   CINEMATIC HERO — Ken Burns keyframes
+   4 variants, assigned by slide index % 4
+   ════════════════════════════════════════ */
+
+/* Variant 0 — slow zoom-in, drift top-left */
+@keyframes hero-kb-0 {
+  0%   { transform: scale(1.0)  translate(0%,     0%   ); }
+  100% { transform: scale(1.13) translate(-2%,   -1.5% ); }
+}
+/* Variant 1 — zoom-out from top-right, settle left */
+@keyframes hero-kb-1 {
+  0%   { transform: scale(1.12) translate(2%,    1%   ); }
+  100% { transform: scale(1.0)  translate(-1.5%, -2%  ); }
+}
+/* Variant 2 — zoom-in from bottom-left, drift right */
+@keyframes hero-kb-2 {
+  0%   { transform: scale(1.0)  translate(-1.5%, 0.5% ); }
+  100% { transform: scale(1.13) translate(2%,    1.5% ); }
+}
+/* Variant 3 — zoom-out from top, gentle descent */
+@keyframes hero-kb-3 {
+  0%   { transform: scale(1.1)  translate(1%,   -2%  ); }
+  100% { transform: scale(1.0)  translate(-1.5%, 1.5%); }
+}
+
+/* Applied via className on the active inner div */
+.hero-kb-0 { animation: hero-kb-0 7s ease-in-out forwards; }
+.hero-kb-1 { animation: hero-kb-1 7s ease-in-out forwards; }
+.hero-kb-2 { animation: hero-kb-2 7s ease-in-out forwards; }
+.hero-kb-3 { animation: hero-kb-3 7s ease-in-out forwards; }
+
+/* ── Text fade-in from below ──────────────────────────────────────────────── */
+@keyframes hero-text-in {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+/* Re-triggers every slide change via React key prop */
+.hero-text-in {
+  animation: hero-text-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── Bottom progress bar ──────────────────────────────────────────────────── */
+@keyframes hero-progress {
+  from { width: 0%;    }
+  to   { width: 100%;  }
+}
+.hero-progress-bar {
+  animation: hero-progress linear forwards;
+  /* animation-duration set inline from SLIDE_DURATION constant */
+}
+
+/* ── Scroll hint bounce ───────────────────────────────────────────────────── */
+@keyframes hero-scroll-bounce {
+  0%, 100% { transform: translateY(0);   opacity: 0.3; }
+  50%      { transform: translateY(5px); opacity: 0.7; }
+}
+.hero-scroll-bounce {
+  animation: hero-scroll-bounce 1.8s ease-in-out infinite;
+}
