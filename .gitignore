@@ -40,9 +40,10 @@ node_modules/
 # Python
 __pycache__/
 *.pyc
-.venv/
-.venv-1/
-.venv-2/
+.venv*/
+
+# Backup files
+*.bak
 
 # ChromaDB
 chroma_db/
