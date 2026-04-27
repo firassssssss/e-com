@@ -1,4 +1,4 @@
-﻿import { IsString, IsNotEmpty, IsNumber, Min, IsOptional } from 'class-validator';
+﻿import { IsString, IsNotEmpty, IsNumber, Min, Max, IsOptional } from 'class-validator';
 
 export class AddToCartDto {
     @IsString()
@@ -7,6 +7,7 @@ export class AddToCartDto {
 
     @IsNumber()
     @Min(1)
+    @Max(100, { message: 'Cannot add more than 100 items at once' })
     quantity!: number;
 
     @IsOptional()

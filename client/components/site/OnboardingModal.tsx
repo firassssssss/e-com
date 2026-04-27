@@ -64,6 +64,7 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const current = STEPS[step];
   const selected = answers[current.key];
@@ -80,6 +81,7 @@ export default function OnboardingModal({ onComplete }: Props) {
       return;
     }
     setSaving(true);
+    setSaveError(null);
     try {
       await api.put("/api/v1/users/me", {
         skinType: answers.skinType,
@@ -89,11 +91,12 @@ export default function OnboardingModal({ onComplete }: Props) {
         onboardingDone: true,
       });
       profileEvents.emit();
-    } catch {
-      // non-fatal
+      onComplete();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? "Failed to save your profile. Please try again.";
+      setSaveError(msg);
     } finally {
       setSaving(false);
-      onComplete();
     }
   };
 
@@ -140,6 +143,13 @@ export default function OnboardingModal({ onComplete }: Props) {
           })}
         </div>
 
+        {/* Save error */}
+        {saveError && (
+          <p style={{ color: "#C4786A", fontSize: "0.78rem", textAlign: "center", marginBottom: "0.75rem" }}>
+            {saveError}
+          </p>
+        )}
+
         {/* Actions */}
         <div style={styles.actions}>
           <button onClick={skip} style={styles.skipBtn}>
@@ -153,7 +163,7 @@ export default function OnboardingModal({ onComplete }: Props) {
               ...(!selected || saving ? styles.nextBtnDisabled : {}),
             }}
           >
-            {saving ? "Savingâ€¦" : isLast ? "Finish" : "Continue"}
+            {saving ? "Saving…" : isLast ? "Finish" : "Continue"}
           </button>
         </div>
 

@@ -1,0 +1,341 @@
+%=============================================================
+%  Chapter 7 --- Iteration 3 : Administration & Security
+%=============================================================
+\chapter{Implementation --- Iteration 3: Administration and Security}
+
+\section*{Introduction}
+The third and final iteration consolidates the platform on two fronts:
+a complete \textbf{administration dashboard} enabling operators to manage
+users, orders, and platform statistics, and a \textbf{security hardening layer}
+covering JWT token revocation, role-based access control, and strict input
+validation across all endpoints.
+At the end of this iteration, \textbf{LUMINA} is ready for production deployment.
+
+%-------------------------------------------------------------
+\section{Sprint Planning}
+%-------------------------------------------------------------
+
+\subsection{Sprint Goal}
+
+\begin{tcolorbox}[colback=blue!5, colframe=blue!40, title=Sprint Goal --- Iteration 3]
+Give administrators the tools they need to operate the platform daily, while
+ensuring that no unauthorized action can be performed by a malicious user
+or a compromised token.
+\end{tcolorbox}
+
+\subsection{Sprint Backlog}
+
+\begin{table}[H]
+\centering
+\caption{User stories --- Iteration 3}
+\begin{tabularx}{\textwidth}{|c|X|c|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{ID} & \textbf{User Story} & \textbf{Priority} & \textbf{Points} \\
+\hline
+US-17 & As an admin, I want a dashboard showing key metrics (orders, revenue, users). & Must & 8 \\
+\hline
+US-18 & As an admin, I want to list, search, and view the detailed profile of each user. & Must & 5 \\
+\hline
+US-19 & As an admin, I want to suspend or reactivate a user account. & Must & 5 \\
+\hline
+US-20 & As an admin, I want to list all orders and update their status. & Must & 5 \\
+\hline
+US-21 & As a customer, I want my session immediately invalidated on logout, even if someone holds my token. & Must & 8 \\
+\hline
+US-22 & As a system, all protected routes must verify the caller's role and reject revoked tokens. & Must & 8 \\
+\hline
+US-23 & As a system, all incoming data must be validated and typed before reaching the business layer. & Must & 5 \\
+\hline
+US-24 & As a super admin, I want to promote a user to the admin role. & Should & 3 \\
+\hline
+\end{tabularx}
+\end{table}
+
+%-------------------------------------------------------------
+\section{Design}
+%-------------------------------------------------------------
+
+\subsection{Role Model}
+
+The platform distinguishes three access levels:
+
+\begin{table}[H]
+\centering
+\caption{Role and permissions matrix}
+\begin{tabularx}{\textwidth}{|X|c|c|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{Permission} & \textbf{Customer} & \textbf{Admin} & \textbf{Super Admin} \\
+\hline
+Catalogue, cart, orders & \checkmark & \checkmark & \checkmark \\
+\hline
+Product management & & \checkmark & \checkmark \\
+\hline
+User management & & \checkmark & \checkmark \\
+\hline
+Order management & & \checkmark & \checkmark \\
+\hline
+Statistics dashboard & & \checkmark & \checkmark \\
+\hline
+Promote to admin role & & & \checkmark \\
+\hline
+Platform configuration & & & \checkmark \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Security Architecture}
+
+Security is implemented in successive layers. Every request passes through
+the following filters in order:
+
+\begin{enumerate}
+  \item \textbf{HTTPS} --- transport encryption (TLS).
+  \item \textbf{JWT validation} --- signature, expiration, \texttt{jti} claim.
+  \item \textbf{Redis blacklist} --- reject if the \texttt{jti} is revoked.
+  \item \textbf{Role check} --- verify the \texttt{role} field in the payload.
+  \item \textbf{Input validation (Zod)} --- typed DTOs before reaching the use case.
+  \item \textbf{Business logic} --- isolated use cases with no direct DB access.
+\end{enumerate}
+
+%-------------------------------------------------------------
+\section{Implementation}
+%-------------------------------------------------------------
+
+\subsection{Admin Dashboard}
+
+The \texttt{/admin} page displays key platform indicators:
+today's orders, monthly revenue, new users, and low-stock products.
+Data is aggregated by direct PostgreSQL queries from the
+\texttt{AdminController}, without a caching layer to ensure freshness.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_admin_dashboard.png}
+  \caption{Admin dashboard --- global statistics}
+  \label{fig:screen_admin_dashboard}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{User Management}
+%-------------------------------------------------------------
+
+\subsubsection{List and Search}
+
+The \texttt{/admin/users} interface lists all accounts with pagination,
+role filtering, and search by name or email.
+Each row shows account status (active / suspended), registration date,
+and order count.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_admin_users.png}
+  \caption{Admin interface --- user list}
+  \label{fig:screen_admin_users}
+\end{figure}
+
+\subsubsection{User Profile}
+
+A user's detail page (\texttt{/admin/users/[id]}) is loaded via a dedicated
+\texttt{GET /api/admin/users/:userId} endpoint, avoiding fetching the full
+list client-side just to find one entry.
+
+\begin{lstlisting}[language=Java, caption=User detail endpoint (AdminController)]
+@Get('/users/:userId')
+@Authorized(['admin', 'super_admin'])
+async getUserById(@Param('userId') userId: string, @Res() res: Response) {
+  const user = await db.select().from(userTable)
+    .where(eq(userTable.id, userId)).limit(1);
+  if (!user.length)
+    return res.status(404).json({ message: 'User not found' });
+  return res.json(user[0]);
+}
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/screen_admin_user_detail.png}
+  \caption{Admin interface --- user detail page}
+  \label{fig:screen_admin_user_detail}
+\end{figure}
+
+\subsubsection{Suspend and Reactivate}
+
+Suspending an account sets the \texttt{isSuspended = true} flag in the
+database. The authentication middleware checks this flag on every request:
+a suspended user receives a \texttt{403 Forbidden} response even with a
+valid token.
+
+\begin{lstlisting}[language=Java, caption=SuspendUserUseCase]
+async execute({ targetUserId, suspend }: SuspendUserInput): Promise<Result<void>> {
+  const user = await this.userRepo.findById(targetUserId);
+  if (!user) return ResultHelper.failure('User not found', ErrorCode.NOT_FOUND);
+  if (user.role === 'super_admin')
+    return ResultHelper.failure('Cannot suspend a super admin', ErrorCode.FORBIDDEN);
+  user.isSuspended = suspend;
+  await this.userRepo.update(user);
+  return ResultHelper.success(undefined);
+}
+\end{lstlisting}
+
+%-------------------------------------------------------------
+\subsection{Order Management}
+%-------------------------------------------------------------
+
+The \texttt{/admin/orders} interface lists all orders with status filtering.
+A dropdown lets the admin advance an order's status
+(\textsc{confirmed} -> \textsc{shipped} -> \textsc{delivered})
+or cancel it (\textsc{cancelled}).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_admin_orders.png}
+  \caption{Admin interface --- order management}
+  \label{fig:screen_admin_orders}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{Security --- JWT Blacklist via Redis}
+%-------------------------------------------------------------
+
+On logout, the user's JWT is immediately invalidated, even if it has not
+yet expired. The mechanism relies on the \texttt{jti} (JWT ID) claim ---
+a UUID v4 unique to each token, included at issuance.
+
+\begin{lstlisting}[language=Java, caption=Token revocation on logout]
+// blacklistToken(rawToken)
+const decoded = JwtService.staticDecode(rawToken) as { jti: string; exp: number };
+const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+if (ttl > 0)
+  await redisClient.set(`blacklist:jti:${decoded.jti}`, '1', { EX: ttl });
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java, caption=Blacklist check on every protected request]
+// tokenBlacklistMiddleware --- fail CLOSED
+const revoked = await redisClient.get(`blacklist:jti:${payload.jti}`);
+if (revoked !== null)
+  return res.status(401).json({ error: 'Token has been revoked' });
+// Redis unavailable -> 503, never 200
+\end{lstlisting}
+
+The \textit{fail-closed} behavior ensures that if Redis is unavailable,
+no potentially revoked token is accepted --- the service returns
+\texttt{503 Service Unavailable} rather than letting the request through.
+
+%-------------------------------------------------------------
+\subsection{Security --- Role-Based Access Control (RBAC)}
+%-------------------------------------------------------------
+
+All administration routes are protected by the \texttt{@Authorized} decorator
+from \textit{routing-controllers}, which verifies the role extracted from the
+JWT payload after blacklist validation.
+
+\begin{lstlisting}[language=Java, caption=Admin routes protected by role]
+@JsonController('/admin')
+@UseBefore(tokenBlacklistMiddleware)
+export class AdminController {
+
+  @Get('/users')
+  @Authorized(['admin', 'super_admin'])
+  async listUsers(@Res() res: Response) { ... }
+
+  @Patch('/users/:id/role')
+  @Authorized(['super_admin'])           // super admin only
+  async assignRole(...) { ... }
+}
+\end{lstlisting}
+
+%-------------------------------------------------------------
+\subsection{Security --- Input Validation (Zod DTOs)}
+%-------------------------------------------------------------
+
+Every endpoint accepting input data is associated with a Zod-validated DTO
+before reaching the corresponding use case.
+Validation errors are normalized into a
+\texttt{422 Unprocessable Entity} response with per-field details.
+
+\begin{lstlisting}[language=Java, caption=Example DTO --- CheckoutDto.ts]
+export const checkoutSchema = z.object({
+  shippingAddress: z.string().min(10, 'Address too short'),
+  paymentMethod:   z.enum(['cash_on_delivery']),
+  currency:        z.string().length(3).default('TND'),
+});
+export type CheckoutDto = z.infer<typeof checkoutSchema>;
+\end{lstlisting}
+
+DTOs cover all input endpoints: product creation/editing, cart operations,
+order placement, and admin actions.
+
+%-------------------------------------------------------------
+\subsection{Role Promotion (Super Admin)}
+%-------------------------------------------------------------
+
+A super administrator can promote a user to the admin role from the user
+management interface. This action is restricted to the \texttt{super\_admin}
+role and logged server-side for auditability.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{figures/screen_admin_role.png}
+  \caption{Super admin interface --- role promotion}
+  \label{fig:screen_admin_role}
+\end{figure}
+
+%-------------------------------------------------------------
+\section{Sprint Review}
+%-------------------------------------------------------------
+
+\subsection{Delivered Features}
+
+\begin{table}[H]
+\centering
+\caption{Iteration 3 results}
+\begin{tabular}{|c|l|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{ID} & \textbf{User Story} & \textbf{Status} \\
+\hline
+US-17 & Statistics dashboard & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-18 & User list and search & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-19 & Account suspension / reactivation & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-20 & Order management & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-21 & JWT revocation on logout & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-22 & RBAC + blacklist check on all routes & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-23 & Zod validation on all endpoints & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-24 & Role promotion (super admin) & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Challenges}
+
+\begin{itemize}
+  \item \textbf{Redis fail-closed behavior}: the initial temptation was to
+        pass requests through when Redis was unavailable to avoid degrading
+        the user experience. This approach was rejected: a revoked token
+        (e.g., after session theft) must \textit{always} be blocked;
+        availability is sacrificed in favor of security.
+  \item \textbf{Redis TTL consistency}: the blacklist TTL must be calculated
+        relative to the token's expiration, not a fixed duration. A small clock
+        skew between the token issuer and Redis required adding a safety margin.
+  \item \textbf{Pagination}: the user and order lists can become large.
+        Drizzle offset/limit pagination was preferred over cursor-based
+        pagination for implementation simplicity at this stage.
+\end{itemize}
+
+\section*{Conclusion}
+Iteration 3 completed the construction of \textbf{LUMINA} by delivering the
+administration tools needed for daily platform operation, alongside a
+multi-layered security architecture covering authentication, session revocation,
+access control, and data validation.
+All three iterations collectively covered the full product backlog defined at
+the start of the project, delivering a secure, intelligent, and production-ready
+e-commerce platform.

@@ -1,0 +1,414 @@
+%=============================================================
+%  Chapter 4 --- State of the Art & Technology Choices
+%=============================================================
+\chapter{State of the Art and Technology Choices}
+
+\section*{Introduction}
+Building an intelligent e-commerce platform requires a rigorous selection of
+technologies at every layer of the system.
+This chapter presents a comparative study of existing solutions for each component
+of \textbf{LUMINA}, justifies the choices made, and describes the hardware and
+software development environment.
+
+%-------------------------------------------------------------
+\section{Frontend Framework}
+%-------------------------------------------------------------
+
+\subsection{Comparison}
+
+The frontend is the first point of contact with the user.
+The evaluation criteria are: rendering strategy (SSR/SSG), ecosystem maturity,
+deployment simplicity, and TypeScript support.
+
+\begin{table}[H]
+\centering
+\caption{Frontend framework comparison}
+\begin{tabularx}{\textwidth}{|l|X|X|X|X|}
+\hline
+\rowcolor{gray!20}
+\textbf{Criterion} & \textbf{Next.js 14} & \textbf{Nuxt 3} & \textbf{Remix} & \textbf{Create React App} \\
+\hline
+Server rendering (SSR/SSG) & \cellcolor{green!15}Native (App Router) & Native & Native & Limited \\
+\hline
+Routing & \cellcolor{green!15}File-based + layouts & File-based & File-based & Manual (React Router) \\
+\hline
+Performance & \cellcolor{green!15}Very high & High & High & Medium \\
+\hline
+Ecosystem & \cellcolor{green!15}Very large (Vercel) & Large (Vue) & Medium & Large \\
+\hline
+TypeScript & \cellcolor{green!15}Native & Native & Native & Optional \\
+\hline
+Image / Font optimization & \cellcolor{green!15}Built-in & Partial & Manual & Manual \\
+\hline
+Maturity & \cellcolor{green!15}Very mature & Mature & Recent & Deprecated \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Choice: Next.js 14}
+
+\textbf{Next.js 14} with the App Router was chosen for the following reasons:
+\begin{itemize}
+  \item Hybrid rendering (SSR for product page SEO, CSR for the cart and chatbot)
+        is manageable at the component level through \textit{Server Components}
+        and \textit{Client Components}.
+  \item Automatic image optimization (\texttt{next/image}) is critical for a
+        cosmetics store where visual quality is paramount.
+  \item Co-location of routes, layouts, and loading states (\textit{loading.tsx},
+        \textit{error.tsx}) reduces architectural complexity.
+  \item TypeScript is supported natively, consistent with the rest of the stack.
+\end{itemize}
+
+%-------------------------------------------------------------
+\section{Backend Framework}
+%-------------------------------------------------------------
+
+\subsection{Comparison}
+
+\begin{table}[H]
+\centering
+\caption{Node.js backend framework comparison}
+\begin{tabularx}{\textwidth}{|l|X|X|X|X|}
+\hline
+\rowcolor{gray!20}
+\textbf{Criterion} & \textbf{Express 5 +\newline routing-controllers} & \textbf{NestJS} & \textbf{Fastify} & \textbf{Hono} \\
+\hline
+Architecture & \cellcolor{green!15}Flexible / Clean & Opinionated (MVC) & Flexible & Minimal \\
+\hline
+Performance & High & Medium & \cellcolor{green!15}Very high & Very high \\
+\hline
+Dependency injection & \cellcolor{green!15}TypeDI & Native (Nest) & Plugins & None \\
+\hline
+Decorators (TS) & \cellcolor{green!15}Yes (routing-controllers) & Yes & No & No \\
+\hline
+Ecosystem maturity & \cellcolor{green!15}Very mature & Mature & Mature & Recent \\
+\hline
+Learning curve & Low & High & Low & Very low \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Choice: Express 5 + routing-controllers + TypeDI}
+
+\textbf{Express 5} paired with \textbf{routing-controllers} and \textbf{TypeDI}
+was preferred over NestJS despite surface-level similarities:
+\begin{itemize}
+  \item NestJS imposes a module structure that, for a project of this size,
+        generates unnecessary verbosity and slows iteration.
+  \item The Express + routing-controllers + TypeDI combination provides the same
+        decorators (\texttt{@Controller}, \texttt{@Get}, \texttt{@Body},
+        \texttt{@Inject}) without the NestJS framework overhead.
+  \item Express 5 brings native async error handling, removing the need for
+        \texttt{try/catch} wrappers in every route handler.
+  \item The Clean Architecture applied to this project requires strict layer
+        separation; an overly prescriptive framework like NestJS tends to
+        short-circuit that separation.
+\end{itemize}
+
+%-------------------------------------------------------------
+\section{ORM and Database}
+%-------------------------------------------------------------
+
+\subsection{Relational Database}
+
+\begin{table}[H]
+\centering
+\caption{Database comparison}
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
+\hline
+\rowcolor{gray!20}
+\textbf{Criterion} & \textbf{PostgreSQL} & \textbf{MySQL 8} & \textbf{MongoDB} \\
+\hline
+Model & \cellcolor{green!15}Relational + JSONB & Relational & Document (NoSQL) \\
+\hline
+ACID transactions & \cellcolor{green!15}Full & Full & Partial (since 4.0) \\
+\hline
+Complex queries & \cellcolor{green!15}Very strong (CTE, window fn.) & Good & Limited \\
+\hline
+Native JSON support & \cellcolor{green!15}JSONB + indexing & JSON (limited) & Native \\
+\hline
+Open source & \cellcolor{green!15}Yes & Yes (Oracle) & Yes (SSPL) \\
+\hline
+Production adoption & \cellcolor{green!15}Very wide & Wide & Wide \\
+\hline
+\end{tabularx}
+\end{table}
+
+\textbf{PostgreSQL} was chosen for its transactional robustness (critical for
+checkout and stock management), its native \texttt{JSONB} type support
+(used for the \texttt{skinType} and \texttt{ingredients} arrays on products),
+and its full compatibility with Drizzle ORM.
+
+\subsection{ORM}
+
+\begin{table}[H]
+\centering
+\caption{TypeScript ORM comparison}
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
+\hline
+\rowcolor{gray!20}
+\textbf{Criterion} & \textbf{Drizzle ORM} & \textbf{Prisma} & \textbf{TypeORM} \\
+\hline
+Type-safety & \cellcolor{green!15}Inferred (TS schema) & Generated (Prisma Client) & TS decorators \\
+\hline
+SQL control & \cellcolor{green!15}SQL-like API & Abstracted & Abstracted \\
+\hline
+Migrations & \cellcolor{green!15}drizzle-kit push/generate & prisma migrate & typeorm migration \\
+\hline
+Bundle size & \cellcolor{green!15}Very small & Medium (binary query engine) & Medium \\
+\hline
+Performance & \cellcolor{green!15}Very high & High & High \\
+\hline
+Maturity & Recent (stable) & \cellcolor{green!15}Mature & Mature \\
+\hline
+\end{tabularx}
+\end{table}
+
+\textbf{Drizzle ORM} was preferred over Prisma for two main reasons:
+its SQL-like API enables complex filtered queries (joins, JSONB \texttt{@>}
+operators for skin type filtering) without losing type safety;
+and the absence of an external binary (Prisma's query engine) simplifies deployment.
+
+%-------------------------------------------------------------
+\section{Authentication}
+%-------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Authentication solution comparison}
+\begin{tabularx}{\textwidth}{|l|X|X|X|X|}
+\hline
+\rowcolor{gray!20}
+\textbf{Criterion} & \textbf{Better Auth} & \textbf{Auth.js (NextAuth)} & \textbf{Passport.js} & \textbf{Custom JWT} \\
+\hline
+Email OTP & \cellcolor{green!15}Native plugin & Partial & Manual & Manual \\
+\hline
+2FA (TOTP) & \cellcolor{green!15}Native plugin & No & Manual & Manual \\
+\hline
+Session + JWT & \cellcolor{green!15}Both & Sessions & JWT & JWT \\
+\hline
+Backend agnostic & \cellcolor{green!15}Yes & No (Next.js-centric) & Yes & Yes \\
+\hline
+JWT blacklist & \cellcolor{green!15}Via plugin / custom & No & Manual & Manual \\
+\hline
+TypeScript & \cellcolor{green!15}Native & Native & Partial & N/A \\
+\hline
+\end{tabularx}
+\end{table}
+
+\textbf{Better Auth} was chosen as it is the only framework offering native
+\texttt{emailOTP} (signup verification) and \texttt{twoFactor} (TOTP/authenticator)
+plugins without custom implementation.
+Auth.js is tightly coupled to Next.js and does not integrate cleanly into a
+separate Express backend --- a hard requirement of our architecture.
+JWT blacklisting (token revocation on logout) is layered on top via Redis,
+independently of Better Auth.
+
+%-------------------------------------------------------------
+\section{AI / RAG Stack}
+%-------------------------------------------------------------
+
+\subsection{Approach: RAG vs. Fine-tuning}
+
+\begin{table}[H]
+\centering
+\caption{RAG vs. Fine-tuning for the product chatbot}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\rowcolor{gray!20}
+\textbf{Criterion} & \textbf{RAG (Retrieval-Augmented Generation)} & \textbf{Fine-tuning} \\
+\hline
+Catalogue updates & \cellcolor{green!15}Immediate (re-indexing) & Full retraining \\
+\hline
+Infrastructure cost & \cellcolor{green!15}Low (local inference) & High (GPU training) \\
+\hline
+Response control & \cellcolor{green!15}Via indexed documents & Hard to control \\
+\hline
+Hallucinations & \cellcolor{green!15}Reduced (grounded context) & Frequent without sufficient data \\
+\hline
+Initial complexity & Medium & \cellcolor{green!15}Low (if cloud API) \\
+\hline
+Data required & \cellcolor{green!15}Catalogue documents & Thousands of examples \\
+\hline
+\end{tabularx}
+\end{table}
+
+The \textbf{RAG} approach is clearly suited to our context:
+the product catalogue changes frequently, we do not have a sufficient training
+dataset for quality fine-tuning, and grounding responses in real product sheets
+is a business requirement.
+
+\subsection{LLM Choice}
+
+\begin{table}[H]
+\centering
+\caption{LLM comparison for the chatbot}
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
+\hline
+\rowcolor{gray!20}
+\textbf{Criterion} & \textbf{Ollama (local)} & \textbf{OpenAI GPT-4} & \textbf{Mistral API} \\
+\hline
+Cost & \cellcolor{green!15}Free (self-hosted) & Paid (per token) & Paid (per token) \\
+\hline
+Data privacy & \cellcolor{green!15}Full (local) & Policy-dependent & Policy-dependent \\
+\hline
+Latency & Medium & \cellcolor{green!15}Low (global CDN) & Low \\
+\hline
+Response quality & Good (llama3, mistral) & \cellcolor{green!15}Excellent & Very good \\
+\hline
+Offline availability & \cellcolor{green!15}Yes & No & No \\
+\hline
+Integration & \cellcolor{green!15}Simple REST API & Official SDK & Official SDK \\
+\hline
+\end{tabularx}
+\end{table}
+
+\textbf{Ollama} (running locally, model \texttt{llama3}) was chosen for the
+academic context of the project: no recurring cost, no customer data sent to
+a third party, and a REST API identical to OpenAI's, facilitating a future
+migration if needed.
+
+\subsection{Embedding Model}
+
+For semantic search, \textbf{sentence-transformers}
+(\texttt{all-MiniLM-L6-v2}) was used: a compact model (22M parameters),
+performant on short texts (product descriptions), and runnable locally without a GPU.
+
+%-------------------------------------------------------------
+\section{Cache Layer}
+%-------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Cache solution comparison}
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
+\hline
+\rowcolor{gray!20}
+\textbf{Criterion} & \textbf{Redis} & \textbf{Memcached} & \textbf{In-process (Map)} \\
+\hline
+Data structures & \cellcolor{green!15}Rich (String, List, Set, ZSet) & Key-value only & Key-value only \\
+\hline
+Persistence & \cellcolor{green!15}Optional (RDB/AOF) & No & No \\
+\hline
+Native TTL & \cellcolor{green!15}Yes & Yes & Manual \\
+\hline
+Multi-instance & \cellcolor{green!15}Yes (cluster) & Yes & No \\
+\hline
+LUMINA use cases & \cellcolor{green!15}JWT blacklist, rate-limit, sessions & Limited & Limited \\
+\hline
+\end{tabularx}
+\end{table}
+
+\textbf{Redis} is used for three complementary use cases:
+\begin{enumerate}
+  \item \textbf{JWT blacklist} --- revoked token \texttt{jti} identifiers are stored
+        with a TTL equal to the token's remaining lifetime.
+  \item \textbf{Rate-limiting} --- sliding window per IP/email to protect against
+        brute-force attacks on the login endpoint.
+  \item \textbf{Better Auth sessions} --- optional server-side session storage.
+\end{enumerate}
+
+%-------------------------------------------------------------
+\section{Development Environment}
+%-------------------------------------------------------------
+
+\subsection{Hardware}
+
+\begin{table}[H]
+\centering
+\caption{Development machine specifications}
+\begin{tabular}{|l|l|}
+\hline
+\rowcolor{gray!20}
+\textbf{Component} & \textbf{Specification} \\
+\hline
+Operating System & Windows 11 Home \\
+\hline
+Processor & Intel Core i7 (12\textsuperscript{th} generation) \\
+\hline
+RAM & 16 GB DDR5 \\
+\hline
+Storage & NVMe SSD 512 GB \\
+\hline
+GPU & NVIDIA RTX (local Ollama inference) \\
+\hline
+Network & High-speed broadband (100 Mbps) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Software}
+
+\begin{table}[H]
+\centering
+\caption{Tools and versions used}
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{gray!20}
+\textbf{Tool} & \textbf{Version} & \textbf{Role} \\
+\hline
+Node.js & 20 LTS & Backend runtime \\
+\hline
+TypeScript & 5.x & Primary language (client + server) \\
+\hline
+Next.js & 14.x & Frontend framework \\
+\hline
+Express & 5.x & Backend HTTP framework \\
+\hline
+Drizzle ORM & 0.30.x & Database access \\
+\hline
+PostgreSQL & 16 & Primary database \\
+\hline
+Redis & 7.x & Cache / JWT blacklist \\
+\hline
+Python & 3.11 & RAG service \\
+\hline
+FastAPI & 0.111.x & RAG service API \\
+\hline
+Ollama & 0.1.x & Local LLM server \\
+\hline
+Docker & 25.x & Service containerization \\
+\hline
+VS Code & 1.90.x & Primary editor \\
+\hline
+Git / GitHub & 2.x & Version control \\
+\hline
+Postman & 11.x & REST API testing \\
+\hline
+PlantUML & 1.2024.x & UML diagram generation \\
+\hline
+Overleaf & -- & Report writing (LaTeX) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Repository Structure}
+
+The source code is organized as a monorepo with two root folders:
+
+\begin{verbatim}
+lumina/
++-- client/          # Next.js 14 - frontend
+|   +-- app/         # App Router (pages, layouts)
+|   +-- components/  # Reusable React components
+|   +-- lib/         # API client, Zustand stores
++-- server/          # Express 5 - backend
+|   +-- src/
+|   |   +-- api/         # Controllers, DTOs, middlewares
+|   |   +-- core/        # Use cases, entities, interfaces
+|   |   +-- adapters/    # Repository implementations
+|   |   +-- infrastructure/ # External services, DB, Redis
+|   +-- drizzle/     # Schemas and migrations
++-- rag-service/     # Python FastAPI - RAG service
+    +-- main.py
+    +-- pipeline/
+    +-- models/
+\end{verbatim}
+
+\section*{Conclusion}
+This chapter presented and justified all technology choices for \textbf{LUMINA}.
+The chosen stack --- Next.js 14, Express 5, Drizzle/PostgreSQL, Better Auth,
+Redis, and Ollama --- forms a coherent ecosystem, fully typed in TypeScript,
+and designed to meet the project's performance, security, and AI requirements.
+The following chapters detail the concrete implementation of these technologies
+across the three Scrum iterations.

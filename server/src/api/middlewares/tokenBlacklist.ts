@@ -13,6 +13,8 @@ export class TokenBlacklist {
   }
 
   static async isRevoked(jti: string): Promise<boolean> {
+    // Fail CLOSED: if Redis is unavailable we cannot verify the token is still
+    // valid, so we treat it as revoked to prevent use of invalidated tokens.
     const result = await redisClient.get(`${BLACKLIST_PREFIX}${jti}`);
     return result !== null;
   }
@@ -59,33 +61,40 @@ function isUuidV4(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-// Compatibility shim � AuthController_2FA_PATCH imports blacklistToken(rawToken)
+// Compatibility shim � AuthController_2FA_PATCH imports blacklistToken(rawToken)
 export async function blacklistToken(rawToken: string): Promise<void> {
   try {
     const decoded = JwtService.staticDecode(rawToken) as { jti?: string; exp?: number } | null;
     if (!decoded?.jti || !decoded?.exp) return;
     await TokenBlacklist.revoke(decoded.jti, decoded.exp);
-  } catch {
-    // never throw � blacklisting failure must not break logout
+  } catch (err) {
+    // Log but do not throw — blacklisting failure must not break logout UX.
+    // The token will expire naturally; this is a best-effort revocation.
+    console.error("[TokenBlacklist] Failed to blacklist token:", err);
   }
 }
 
 export async function isBlacklisted(rawToken: string): Promise<boolean> {
-  try {
-    const decoded = JwtService.staticDecode(rawToken) as { jti?: string } | null;
-    if (!decoded?.jti) return false;
-    return TokenBlacklist.isRevoked(decoded.jti);
-  } catch {
-    return false;
-  }
+  // Fail CLOSED: decode errors mean malformed token → treat as blacklisted.
+  // Redis errors propagate so the caller (rejectBlacklisted) can return 401.
+  const decoded = JwtService.staticDecode(rawToken) as { jti?: string } | null;
+  if (!decoded?.jti) return true; // no jti → cannot verify → deny
+  return TokenBlacklist.isRevoked(decoded.jti);
 }
 
 export async function rejectBlacklisted(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) return next();
   const token = authHeader.split(" ")[1];
-  if (await isBlacklisted(token)) {
-    return res.status(401).json({ error: "Token has been revoked. Please log in again." });
+  try {
+    if (await isBlacklisted(token)) {
+      return res.status(401).json({ error: "Token has been revoked. Please log in again." });
+    }
+  } catch (err) {
+    // Redis unavailable: fail closed — reject the request rather than allowing
+    // potentially revoked tokens through.
+    console.error("[TokenBlacklist] Redis error — rejecting request:", err);
+    return res.status(503).json({ error: "Authentication service temporarily unavailable." });
   }
   next();
 }

@@ -1,48 +1,50 @@
 import {
-  IsString, IsNotEmpty, IsNumber, Min, Max,
-  IsArray, IsOptional, IsBoolean,
-  MaxLength, ArrayMaxSize,
+  IsString, IsNumber, Min, Max, IsArray,
+  IsOptional, IsBoolean, MaxLength, ArrayMaxSize,
 } from 'class-validator';
 
-export class CreateProductDto {
+export class UpdateProductDto {
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
     @MaxLength(200)
-    name!: string;
+    name?: string;
 
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
     @MaxLength(5000)
-    description!: string;
+    description?: string;
 
+    @IsOptional()
     @IsNumber()
     @Min(0)
     @Max(100000)
-    price!: number;
+    price?: number | null;
 
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    categoryId!: string;
+    categoryId?: string;
 
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
     @MaxLength(100)
-    brand!: string;
+    brand?: string;
 
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
     @MaxLength(100)
-    sku!: string;
+    sku?: string;
 
+    @IsOptional()
     @IsNumber()
     @Min(0)
     @Max(1000000)
-    stock!: number;
+    stock?: number | null;
 
+    @IsOptional()
     @IsArray()
     @ArrayMaxSize(20)
     @IsString({ each: true })
-    images!: string[];
+    images?: string[];
 
     @IsOptional()
     @IsArray()

@@ -1,0 +1,101 @@
+%=============================================================
+%  General Introduction
+%=============================================================
+\chapter*{General Introduction}
+\addcontentsline{toc}{chapter}{General Introduction}
+
+\section*{Context}
+
+The Tunisian retail landscape is undergoing a profound digital transformation.
+While e-commerce adoption has accelerated significantly since 2020, the market
+remains largely fragmented: most local businesses still rely on informal social
+commerce --- WhatsApp groups, Facebook marketplace posts, and Instagram direct
+messages --- to reach their customers.
+Those that do attempt a more structured online presence typically turn to
+generic solutions such as WooCommerce or Shopify, which provide a catalogue
+and a payment form but offer little in terms of intelligent personalization
+or customer engagement.
+
+In the cosmetics and personal care sector, this gap is particularly visible.
+Customers face an overwhelming number of products with no guidance tailored
+to their specific skin type, concerns, or purchasing history.
+The result is decision fatigue, low conversion rates, and high return rates ---
+problems that a well-designed, AI-augmented platform is uniquely positioned
+to solve.
+
+\section*{Problem Statement}
+
+This project addresses the following question:
+\textit{How can a full-stack e-commerce platform be designed to deliver both
+a secure, reliable shopping experience and intelligent, personalized
+interactions --- without relying on expensive third-party AI services or
+compromising customer data privacy?}
+
+Three concrete challenges arise from this question:
+\begin{enumerate}
+  \item \textbf{Architecture}: building a maintainable, scalable system using
+        Clean Architecture principles that cleanly separates business logic
+        from infrastructure concerns.
+  \item \textbf{AI integration}: embedding a Retrieval-Augmented Generation
+        (RAG) chatbot and a behavioral recommendation engine that operate
+        entirely on local infrastructure, with no data sent to external providers.
+  \item \textbf{Security}: implementing defense-in-depth --- from token revocation
+        and brute-force protection to role-based access control and prompt
+        injection guards --- without sacrificing developer experience.
+\end{enumerate}
+
+\section*{Proposed Solution}
+
+\textbf{LUMINA} is a full-stack intelligent e-commerce platform built for the
+Tunisian cosmetics market.
+It combines a Next.js 14 frontend, an Express 5 / TypeScript backend following
+Clean Architecture, and a Python/FastAPI RAG microservice running entirely
+on local infrastructure (Ollama + sentence-transformers).
+
+The platform delivers:
+\begin{itemize}
+  \item A complete shopping experience --- catalogue with advanced filtering,
+        persistent cart, atomic checkout, and order tracking.
+  \item Secure authentication --- email OTP verification, TOTP two-factor
+        authentication, JWT blacklisting, and brute-force protection.
+  \item An AI chatbot grounded in the product catalogue, protected by a
+        three-layer prompt injection guard.
+  \item A personalized recommendation engine driven by behavioral signals,
+        requiring no external ML service.
+  \item A full administration dashboard for product, user, and order management.
+\end{itemize}
+
+\section*{Report Structure}
+
+This report is organized into seven chapters, following the three Scrum
+iterations that structured the development process:
+
+\begin{itemize}
+  \item \textbf{Chapter 1 --- Project Context} presents the host company,
+        a critical analysis of existing solutions, and the proposed project
+        framed within the Scrum methodology.
+
+  \item \textbf{Chapter 2 --- Requirements Specification} defines the
+        functional and non-functional requirements, the system's actors,
+        and the use case diagrams for each module.
+
+  \item \textbf{Chapter 3 --- Conceptual Study} details the system architecture,
+        Clean Architecture layers, sequence diagrams for key flows, and the
+        domain class diagram.
+
+  \item \textbf{Chapter 4 --- State of the Art} presents comparative studies
+        for each technology choice --- frontend, backend, ORM, authentication,
+        AI stack, and caching --- with justified selections.
+
+  \item \textbf{Chapter 5 --- Iteration 1} covers the implementation of the
+        e-commerce core: authentication, catalogue, cart, checkout, and
+        basic administration.
+
+  \item \textbf{Chapter 6 --- Iteration 2} details the AI and personalization
+        layer: onboarding questionnaire, RAG chatbot with injection protection,
+        and the behavioral recommendation engine.
+
+  \item \textbf{Chapter 7 --- Iteration 3} describes the administration dashboard
+        and the security hardening layer: JWT revocation, RBAC, and Zod
+        input validation.
+\end{itemize}

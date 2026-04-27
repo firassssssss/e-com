@@ -9,6 +9,8 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
   role: text("role").default("user").notNull(),
+  // Better Auth twoFactor plugin — required field
+  twoFactorEnabled: boolean("two_factor_enabled").default(false).notNull(),
   skinType: text("skin_type"),
   hairType: text("hair_type"),
   skinConcerns: text("skin_concerns"),
@@ -78,6 +80,20 @@ export const verification = pgTable(
       .notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
+
+// Better Auth twoFactor plugin — stores TOTP secret + backup codes per user
+export const twoFactor = pgTable(
+  "two_factor",
+  {
+    id: text("id").primaryKey().$default(() => v4()),
+    secret: text("secret").notNull(),
+    backupCodes: text("backup_codes").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("two_factor_userId_idx").on(table.userId)],
 );
 
 export const userRelations = relations(user, ({ many }) => ({

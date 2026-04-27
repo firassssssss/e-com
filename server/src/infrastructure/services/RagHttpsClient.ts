@@ -78,7 +78,11 @@ export const ragClient = {
     try {
       const res = await client.post('/classify-injection', { message }, { timeout: 5_000 });
       return res.data;
-    } catch {
+    } catch (err) {
+      // RAG service unavailable: ML layer is bypassed. Regex (Layer 2) already
+      // passed, so common patterns are covered. Log a warning so ops can alert
+      // on sustained RAG downtime while users are not hard-blocked.
+      console.warn('[RagClient] classifyInjection failed — ML layer skipped:', (err as any)?.message ?? err);
       return { is_injection: false, score: 0, threshold: 0 };
     }
   },

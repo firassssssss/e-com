@@ -5,26 +5,35 @@ import { ErrorCode } from '../../core/common/Result.js';
 
 @Service()
 export class StripeService implements IPaymentService {
-    async createCharge(input: ChargeInput): Promise<Result<ChargeResult>> {
-        // Stub implementation
-        console.log('StripeService stub: Creating charge', input);
+    // ── NOTE: Full Stripe integration is not yet implemented.
+    // To enable card payments:
+    //   1. npm install stripe
+    //   2. Set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in .env
+    //   3. Implement createCharge using Stripe PaymentIntents API
+    //   4. Update the frontend checkout to use Stripe.js + CardElement
+    //      (NEVER collect raw card data through your own backend — PCI DSS)
+    //
+    // Until then, the 'stripe' payment method is explicitly rejected so that
+    // no orders are created with fake payment IDs.
 
-        // Simulate successful charge for 'cash_on_delivery' (or logic handled in use case?)
-        // Actually, PaymentService usually handles external gateway.
-        // If payment method is not Stripe, maybe this service isn't called or handles it differently.
-
-        return ResultHelper.success({
-            paymentIntentId: 'stub_pi_' + Math.random().toString(36).substring(7),
-            clientSecret: 'stub_secret',
-            status: 'succeeded'
-        });
+    async createCharge(_input: ChargeInput): Promise<Result<ChargeResult>> {
+        return ResultHelper.failure(
+            'Card payments are not yet available. Please choose Cash on Delivery.',
+            ErrorCode.EXTERNAL_SERVICE_ERROR,
+        );
     }
 
-    async verifyWebhook(payload: string, signature: string): Promise<Result<boolean>> {
-        return ResultHelper.success(true);
+    async verifyWebhook(_payload: string, _signature: string): Promise<Result<boolean>> {
+        return ResultHelper.failure(
+            'Stripe webhooks are not configured.',
+            ErrorCode.EXTERNAL_SERVICE_ERROR,
+        );
     }
 
-    async refund(paymentIntentId: string): Promise<Result<void>> {
-        return ResultHelper.success(undefined);
+    async refund(_paymentIntentId: string): Promise<Result<void>> {
+        return ResultHelper.failure(
+            'Refunds via Stripe are not yet implemented.',
+            ErrorCode.EXTERNAL_SERVICE_ERROR,
+        );
     }
 }

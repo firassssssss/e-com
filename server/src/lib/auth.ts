@@ -28,7 +28,13 @@ export const auth = betterAuth({
 
         // ── Email OTP (primary auth for all users) ─────────────────────────
         emailOTP({
-            async sendVerificationOTP({ email, otp }) {
+            async sendVerificationOTP({ email, otp, type }) {
+                if (process.env.BYPASS_OTP === 'true') {
+                    // Dev bypass: print OTP to console instead of sending email.
+                    // Use the code shown here when the frontend asks for OTP.
+                    console.log(`\n[Auth] ⚡ BYPASS_OTP active — ${type} OTP for ${email}: \x1b[33m${otp}\x1b[0m\n`);
+                    return;
+                }
                 await emailService.sendOtp(email, otp, 10);
             },
             otpLength: 6,

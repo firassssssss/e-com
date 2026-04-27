@@ -1,11 +1,13 @@
 ﻿import { create } from "zustand";
 import { authApi } from "./api";
 
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
-  role: "user" | "admin";
+  role: "user" | "admin" | "super_admin" | "suspended";
+  emailVerified?: boolean;
+  image?: string | null;
 }
 
 interface AuthState {
@@ -24,9 +26,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     set({ loading: true });
     try {
-      const res = await authApi.login(email, password);
-      // better-auth sign-in/email returns { token, user }
-      const { user } = res.data;
+      await authApi.login(email, password);
+      // Better Auth sets an httpOnly cookie; fetch the session to get the user
+      const res = await authApi.me();
+      const user = res.data?.user ?? res.data ?? null;
       set({ user, loading: false });
     } catch (err) {
       set({ loading: false });
@@ -37,9 +40,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   register: async (data) => {
     set({ loading: true });
     try {
-      const res = await authApi.register(data);
-      // better-auth sign-up/email returns { token, user }
-      const { user } = res.data;
+      await authApi.register(data);
+      // After registration + OTP verification, session cookie is set
+      const res = await authApi.me();
+      const user = res.data?.user ?? res.data ?? null;
       set({ user, loading: false });
     } catch (err) {
       set({ loading: false });

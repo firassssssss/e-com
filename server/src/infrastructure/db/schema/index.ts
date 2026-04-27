@@ -1,4 +1,4 @@
-export { default as user, account, session, verification, accountRelations, sessionRelations, userRelations } from './auth';
+export { default as user, account, session, verification, twoFactor, accountRelations, sessionRelations, userRelations } from './auth';
 export { deviceToken } from './deviceTokens';
 export { report, reportTargetTypeEnum } from './reports';
 export { notification } from './notifications';

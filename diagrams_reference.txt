@@ -1,0 +1,656 @@
+================================================================
+  LUMINA — PlantUML Diagram Reference
+  All diagrams: Chapters 1, 2, 3
+  Output folder: figures/
+  Author: Sajed Lamouchi & Firas Rahal — 2025-2026
+================================================================
+
+Each block below is one .puml file.
+File name is on the first line of each block.
+Save each as its own file, then run:
+  java -jar plantuml.jar *.puml
+or use the Overleaf PlantUML plugin / plantuml.com/plantuml
+
+================================================================
+CHAPTER 1
+================================================================
+
+----------------------------------------------------------------
+FILE: scrum_lifecycle.puml   →   figures/scrum_lifecycle.png
+----------------------------------------------------------------
+@startuml scrum_lifecycle
+skinparam backgroundColor #FAFAFA
+skinparam ArrowColor #444
+skinparam defaultFontName Arial
+
+rectangle "Product Backlog" as PB #D5E8D4
+rectangle "Sprint Planning" as SP #DAE8FC
+rectangle "Sprint\n(2 weeks)" as S #FFF2CC
+rectangle "Sprint Review" as SRV #F8CECC
+rectangle "Sprint Retrospective" as SRT #E1D5E7
+rectangle "Potentially Shippable\nProduct Increment" as INC #D5E8D4
+
+PB -right-> SP : selected items
+SP -right-> S  : sprint goal
+S  -right-> SRV : increment
+SRV -down-> SRT
+SRT -left-> PB  : refined backlog
+SRV -down-> INC
+
+note bottom of S
+  Daily Scrum
+  15 min / day
+end note
+@enduml
+
+================================================================
+CHAPTER 2
+================================================================
+
+----------------------------------------------------------------
+FILE: uc_global.puml   →   figures/uc_global.png
+----------------------------------------------------------------
+@startuml uc_global
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+actor Visitor    as V
+actor Customer   as C
+actor Admin      as A
+actor SuperAdmin as SA
+
+rectangle "LUMINA Platform" {
+  usecase "Browse Catalogue"        as UC1
+  usecase "Search & Filter"         as UC2
+  usecase "View Product Details"    as UC3
+  usecase "Manage Account"          as UC4
+  usecase "Shopping & Checkout"     as UC5
+  usecase "Track Orders"            as UC6
+  usecase "AI Chatbot"              as UC7
+  usecase "Get Recommendations"     as UC8
+  usecase "Leave Reviews"           as UC9
+  usecase "Manage Products"         as UC10
+  usecase "Manage Users"            as UC11
+  usecase "View Analytics"          as UC12
+  usecase "Manage Roles & Config"   as UC13
+}
+
+V  --> UC1
+V  --> UC2
+V  --> UC3
+
+C  --> UC1
+C  --> UC2
+C  --> UC3
+C  --> UC4
+C  --> UC5
+C  --> UC6
+C  --> UC7
+C  --> UC8
+C  --> UC9
+
+A  --> UC10
+A  --> UC11
+A  --> UC12
+
+SA --> UC13
+SA --> UC11
+SA --> UC12
+@enduml
+
+----------------------------------------------------------------
+FILE: uc_auth.puml   →   figures/uc_auth.png
+----------------------------------------------------------------
+@startuml uc_auth
+left to right direction
+skinparam actorStyle awesome
+
+actor Visitor  as V
+actor Customer as C
+
+rectangle "Authentication Module" {
+  usecase "Register"                  as R
+  usecase "Verify Email (OTP)"        as OTP
+  usecase "Login"                     as L
+  usecase "Forgot Password"           as FP
+  usecase "Reset Password"            as RP
+  usecase "Enable 2FA (TOTP)"         as TFA
+  usecase "Login with 2FA code"       as TFA2
+  usecase "Logout"                    as OUT
+  usecase "Brute-Force Protection"    as BF
+}
+
+V --> R
+R .> OTP  : <<include>>
+V --> L
+L .> BF   : <<include>>
+L .> TFA2 : <<extend>>
+V --> FP
+FP .> RP  : <<include>>
+
+C --> TFA
+C --> OUT
+@enduml
+
+----------------------------------------------------------------
+FILE: uc_shopping.puml   →   figures/uc_shopping.png
+----------------------------------------------------------------
+@startuml uc_shopping
+left to right direction
+skinparam actorStyle awesome
+
+actor Customer as C
+
+rectangle "Shopping Module" {
+  usecase "Add to Cart"          as AC
+  usecase "View Cart"            as VC
+  usecase "Update Cart"          as UC
+  usecase "Remove from Cart"     as RC
+  usecase "Proceed to Checkout"  as CHK
+  usecase "Select Payment"       as PAY
+  usecase "Place Order"          as PO
+  usecase "View Order History"   as OH
+  usecase "Track Order Status"   as TS
+  usecase "Submit Review"        as REV
+  usecase "Add to Wishlist"      as WL
+}
+
+C --> AC
+C --> VC
+C --> UC
+C --> RC
+C --> CHK
+CHK .> PAY : <<include>>
+CHK .> PO  : <<include>>
+C --> OH
+C --> TS
+C --> REV
+C --> WL
+@enduml
+
+----------------------------------------------------------------
+FILE: uc_ai.puml   →   figures/uc_ai.png
+----------------------------------------------------------------
+@startuml uc_ai
+left to right direction
+skinparam actorStyle awesome
+
+actor Customer as C
+actor "RAG Service\n(Python/FastAPI)" as RAG <<system>>
+
+rectangle "AI & Personalisation Module" {
+  usecase "Ask Chatbot Question"       as Q
+  usecase "Prompt Injection Guard"     as PIG
+  usecase "Get Contextual Answer"      as ANS
+  usecase "Track Behaviour Signal"     as SIG
+  usecase "Get Recommendations"        as REC
+  usecase "View Personalised Feed"     as FEED
+}
+
+C   --> Q
+Q   .> PIG  : <<include>>
+Q   .> ANS  : <<include>>
+ANS --> RAG
+C   --> SIG
+SIG .> REC  : <<extend>>
+C   --> FEED
+FEED .> REC : <<include>>
+@enduml
+
+----------------------------------------------------------------
+FILE: uc_admin.puml   →   figures/uc_admin.png
+----------------------------------------------------------------
+@startuml uc_admin
+left to right direction
+skinparam actorStyle awesome
+
+actor Admin      as A
+actor SuperAdmin as SA
+
+rectangle "Administration Module" {
+  usecase "List / Search Users"    as U1
+  usecase "View User Details"      as U2
+  usecase "Suspend / Activate User" as U3
+  usecase "Create Product"         as P1
+  usecase "Edit Product"           as P2
+  usecase "Delete Product"         as P3
+  usecase "Manage Categories"      as P4
+  usecase "View Order List"        as O1
+  usecase "Update Order Status"    as O2
+  usecase "View Dashboard Stats"   as D1
+  usecase "Assign Admin Role"      as R1
+  usecase "Manage Platform Config" as R2
+}
+
+A  --> U1
+A  --> U2
+A  --> U3
+A  --> P1
+A  --> P2
+A  --> P3
+A  --> P4
+A  --> O1
+A  --> O2
+A  --> D1
+
+SA --> U1
+SA --> U2
+SA --> U3
+SA --> R1
+SA --> R2
+SA --> D1
+@enduml
+
+================================================================
+CHAPTER 3
+================================================================
+
+----------------------------------------------------------------
+FILE: arch_component.puml   →   figures/arch_component.png
+----------------------------------------------------------------
+@startuml arch_component
+skinparam componentStyle rectangle
+skinparam backgroundColor #FAFAFA
+
+package "Client (Next.js 14)" {
+  [Pages / App Router]    as PAGES
+  [Zustand Auth Store]    as STORE
+  [API Client (Axios)]    as AXIOS
+}
+
+package "Server (Node.js / Express 5)" {
+  [REST Controllers]      as CTRL
+  [Use Cases]             as UC
+  [Domain Entities]       as DOM
+  [Repositories]          as REPO
+  [Better Auth]           as BAUTH
+  [JWT Blacklist\n(Redis)]as BL
+}
+
+package "Data Layer" {
+  database "PostgreSQL"   as PG
+  database "Redis"        as RD
+}
+
+package "AI Service (Python / FastAPI)" {
+  [RAG Pipeline]          as RAG
+  [Embedding Model\n(sentence-transformers)" as EMB
+  [Ollama LLM]            as LLM
+  database "Vector Store" as VS
+}
+
+PAGES --> AXIOS
+AXIOS --> CTRL : HTTPS/JSON
+CTRL  --> BAUTH
+CTRL  --> BL
+CTRL  --> UC
+UC    --> REPO
+UC    --> DOM
+REPO  --> PG
+BL    --> RD
+CTRL  --> RAG   : HTTP (internal)
+RAG   --> EMB
+RAG   --> LLM
+RAG   --> VS
+@enduml
+
+----------------------------------------------------------------
+FILE: arch_layers.puml   →   figures/arch_layers.png
+----------------------------------------------------------------
+@startuml arch_layers
+skinparam backgroundColor #FAFAFA
+skinparam rectangleBackgroundColor #DAE8FC
+skinparam defaultFontName Arial
+
+rectangle "Presentation Layer\n(Next.js Pages, React Components, Zustand)" as L1 #D5E8D4
+rectangle "API / Interface Adapters\n(Express Controllers, DTOs, routing-controllers)" as L2 #FFF2CC
+rectangle "Application Layer\n(Use Cases: CheckoutUseCase, ListProductsUseCase, …)" as L3 #DAE8FC
+rectangle "Domain Layer\n(Entities: Order, Product, Cart, User — pure TS classes)" as L4 #F8CECC
+rectangle "Infrastructure Layer\n(Drizzle ORM, PostgreSQL, Redis, StripeService, RagHttpsClient)" as L5 #E1D5E7
+
+L1 -down-> L2
+L2 -down-> L3
+L3 -down-> L4
+L3 -down-> L5
+note right of L4 : No framework deps\nPure business logic
+note right of L5 : Implements interfaces\ndefined in Domain
+@enduml
+
+----------------------------------------------------------------
+FILE: seq_register.puml   →   figures/seq_register.png
+----------------------------------------------------------------
+@startuml seq_register
+skinparam sequenceArrowThickness 2
+skinparam backgroundColor #FAFAFA
+
+actor       "User"           as U
+participant "RegisterPage"   as FE
+participant "AuthController" as CTRL
+participant "BetterAuth"     as BA
+participant "EmailService"   as EMAIL
+database    "PostgreSQL"     as DB
+
+U    -> FE   : Fill form (name, email, password)
+FE   -> CTRL : POST /api/auth/register
+CTRL -> BA   : createUser(email, password, name)
+BA   -> DB   : INSERT user (unverified)
+BA   -> EMAIL: sendOTP(email)
+CTRL --> FE  : 201 Created — check email
+FE   --> U   : "Verify your email"
+
+U    -> FE   : Enter OTP code
+FE   -> CTRL : POST /api/auth/verify-email
+CTRL -> BA   : verifyEmail(otp)
+BA   -> DB   : UPDATE user SET emailVerified = true
+CTRL --> FE  : 200 OK + session token
+FE   --> U   : Redirect to home
+@enduml
+
+----------------------------------------------------------------
+FILE: seq_login.puml   →   figures/seq_login.png
+----------------------------------------------------------------
+@startuml seq_login
+skinparam backgroundColor #FAFAFA
+
+actor       "User"           as U
+participant "LoginPage"      as FE
+participant "AuthController" as CTRL
+participant "BetterAuth"     as BA
+participant "BruteForce\nGuard (Redis)" as BF
+database    "PostgreSQL"     as DB
+
+U    -> FE   : Enter email + password
+FE   -> CTRL : POST /api/auth/sign-in/email
+CTRL -> BF   : checkRateLimit(ip, email)
+alt Too many attempts
+  BF --> CTRL : RATE_LIMIT_EXCEEDED
+  CTRL --> FE : 429 Too Many Requests
+  FE   --> U  : "Account locked. Try later."
+else OK
+  BF   --> CTRL: allowed
+  CTRL -> BA   : signIn(email, password)
+  BA   -> DB   : SELECT user WHERE email = ?
+  alt Invalid credentials
+    BA --> CTRL : AUTH_FAILED
+    CTRL -> BF  : recordFailedAttempt(ip, email)
+    CTRL --> FE : 401 Unauthorized
+  else Valid — 2FA enabled
+    BA --> CTRL : requires2FA
+    CTRL --> FE : 200 { twoFactorRequired: true }
+    FE   --> U  : Show TOTP input
+    U    -> FE  : Enter TOTP code
+    FE   -> CTRL: POST /api/auth/two-factor/verify
+    CTRL -> BA  : verifyTOTP(code)
+    BA   --> CTRL: OK
+    CTRL --> FE : 200 + JWT token
+    FE   --> U  : Redirect to dashboard
+  else Valid — no 2FA
+    BA --> CTRL : OK
+    CTRL --> FE : 200 + JWT token
+    FE   --> U  : Redirect to home
+  end
+end
+@enduml
+
+----------------------------------------------------------------
+FILE: seq_checkout.puml   →   figures/seq_checkout.png
+----------------------------------------------------------------
+@startuml seq_checkout
+skinparam backgroundColor #FAFAFA
+
+actor       "Customer"         as C
+participant "CheckoutPage"     as FE
+participant "OrderController"  as CTRL
+participant "CheckoutUseCase"  as UC
+participant "CartRepo"         as CART
+participant "ProductRepo"      as PROD
+participant "OrderRepo"        as ORD
+participant "TransactionMgr"   as TX
+database    "PostgreSQL"       as DB
+
+C   -> FE   : Fill shipping + click Place Order
+FE  -> CTRL : POST /api/orders/checkout\n{shippingAddress, paymentMethod}
+CTRL -> UC  : execute(userId, shippingAddress, paymentMethod)
+UC  -> CART : findByUserId(userId)
+CART -> DB  : SELECT cart items
+CART --> UC : CartItems
+
+UC  -> TX   : begin transaction
+loop For each cart item
+  TX -> PROD : findById(productId)
+  PROD -> DB : SELECT product
+  PROD --> TX : Product
+  alt Insufficient stock
+    TX --> UC : throw Error
+    UC --> CTRL: failure(VALIDATION_ERROR)
+    CTRL --> FE: 422 Insufficient stock
+    FE --> C  : Show error
+  else Stock OK
+    TX -> PROD : update(product.stock -= qty)
+    PROD -> DB : UPDATE products
+  end
+end
+
+TX  -> ORD  : create(order)
+ORD -> DB   : INSERT order + order_items
+TX  -> CART : clearCart(userId)
+CART -> DB  : DELETE cart items
+TX  --> UC  : Order created
+UC  --> CTRL: success(Order)
+CTRL --> FE : 201 Created
+FE  --> C   : Redirect to /orders
+@enduml
+
+----------------------------------------------------------------
+FILE: seq_chatbot.puml   →   figures/seq_chatbot.png
+----------------------------------------------------------------
+@startuml seq_chatbot
+skinparam backgroundColor #FAFAFA
+
+actor       "Customer"         as C
+participant "ChatWidget"       as FE
+participant "ChatController"   as CTRL
+participant "RagHttpsClient"   as RAG_C
+participant "Injection Guard"  as GUARD
+participant "RAG Service\n(Python)" as RAG
+participant "Ollama LLM"       as LLM
+database    "Vector Store"     as VS
+
+C     -> FE    : Type question
+FE    -> CTRL  : POST /api/chat {message}
+CTRL  -> RAG_C : query(message)
+RAG_C -> GUARD : checkLength(message)
+alt Message too long
+  GUARD --> RAG_C: REJECTED
+  RAG_C --> CTRL : injection detected
+  CTRL --> FE   : 400 Bad Request
+  FE --> C      : "Message rejected"
+else Length OK
+  RAG_C -> GUARD: regexCheck(message)
+  RAG_C -> GUARD: mlClassify(message)
+  alt Injection detected
+    GUARD --> RAG_C : INJECTION
+    CTRL --> FE : 400 Bad Request
+  else Clean
+    RAG_C -> RAG  : POST /query {question}
+    RAG   -> VS   : vectorSearch(embed(question))
+    VS    --> RAG  : top-k documents
+    RAG   -> LLM  : prompt(context + question)
+    LLM   --> RAG : answer
+    RAG   --> RAG_C: {answer}
+    RAG_C --> CTRL : answer
+    CTRL  --> FE  : 200 {answer}
+    FE    --> C   : Display answer
+  end
+end
+@enduml
+
+----------------------------------------------------------------
+FILE: seq_recommendations.puml   →   figures/seq_recommendations.png
+----------------------------------------------------------------
+@startuml seq_recommendations
+skinparam backgroundColor #FAFAFA
+
+actor       "Customer"              as C
+participant "ProductFeed"           as FE
+participant "ProductController"     as CTRL
+participant "ListProductsUseCase"   as UC
+participant "ProductRepo\n(Drizzle)" as REPO
+participant "BehaviourSignal\nService" as BSS
+database    "PostgreSQL"            as DB
+
+C   -> FE   : Browse homepage / category
+FE  -> BSS  : trackSignal(userId, VIEW, productId)
+BSS -> DB   : INSERT behaviour_signals
+
+FE  -> CTRL : GET /api/products?recommended=true
+CTRL -> UC  : execute({userId, recommended:true})
+UC  -> REPO : findFiltered({userId, recommended:true})
+REPO -> DB  : SELECT products JOIN behaviour_signals\nORDER BY affinity score DESC
+DB  --> REPO: ranked products
+REPO --> UC : Product[]
+UC  --> CTRL: success(products)
+CTRL --> FE : 200 {products}
+FE  --> C   : Render personalised grid
+
+note over BSS, DB
+  Signals: VIEW, WISHLIST, CART_ADD, PURCHASE
+  Weights computed server-side; no separate ML model needed
+  for MVP — collaborative filtering planned for v2
+end note
+@enduml
+
+----------------------------------------------------------------
+FILE: class_domain.puml   →   figures/class_domain.png
+----------------------------------------------------------------
+@startuml class_domain
+skinparam classAttributeIconSize 0
+skinparam backgroundColor #FAFAFA
+skinparam classFontName Arial
+
+class User {
+  +id: string
+  +email: string
+  +name: string
+  +role: "customer"|"admin"|"super_admin"
+  +emailVerified: boolean
+  +twoFactorEnabled: boolean
+  +isSuspended: boolean
+  +createdAt: Date
+}
+
+class Product {
+  +id: string
+  +name: string
+  +description: string
+  +price: number
+  +stock: number
+  +isActive: boolean
+  +hasVariants: boolean
+  +categoryId: string
+  +images: string[]
+  +skinType: string[]
+  +ingredients: string[]
+  +createdAt: Date
+}
+
+class ProductVariant {
+  +id: string
+  +productId: string
+  +name: string
+  +stock: number
+  +price: number
+}
+
+class Category {
+  +id: string
+  +name: string
+  +slug: string
+}
+
+class Cart {
+  +id: string
+  +userId: string
+  +items: CartItem[]
+  +updatedAt: Date
+}
+
+class CartItem {
+  +productId: string
+  +variantId: string?
+  +quantity: number
+  +price: number
+}
+
+class Order {
+  +id: string
+  +userId: string
+  +items: OrderItem[]
+  +totalAmount: number
+  +status: OrderStatus
+  +shippingAddress: string
+  +paymentMethod: string
+  +stripePaymentIntentId: string?
+  +createdAt: Date
+}
+
+class OrderItem {
+  +productId: string
+  +productName: string
+  +quantity: number
+  +priceAtPurchase: number
+  +variantId: string?
+}
+
+class Review {
+  +id: string
+  +userId: string
+  +productId: string
+  +rating: 1..5
+  +comment: string
+  +createdAt: Date
+}
+
+class Wishlist {
+  +id: string
+  +userId: string
+  +productIds: string[]
+}
+
+class BehaviourSignal {
+  +id: string
+  +userId: string
+  +productId: string
+  +signalType: "VIEW"|"WISHLIST"|"CART_ADD"|"PURCHASE"
+  +createdAt: Date
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+User       "1" -- "1"   Cart
+User       "1" -- "*"   Order
+User       "1" -- "*"   Review
+User       "1" -- "1"   Wishlist
+User       "1" -- "*"   BehaviourSignal
+Cart       "1" *-- "*"  CartItem
+Order      "1" *-- "*"  OrderItem
+Order       --> OrderStatus
+Product    "1" -- "*"   ProductVariant
+Product    "1" -- "*"   Review
+Product     --> Category
+CartItem   --> Product
+OrderItem  --> Product
+BehaviourSignal --> Product
+@enduml
+
+================================================================
+END OF DOCUMENT — 14 diagrams total
+Ch1: 1  |  Ch2: 5  |  Ch3: 8
+================================================================

@@ -16,8 +16,10 @@ import { GetUserActivityAnalyticsUseCase } from '../../core/usecases/admin/GetUs
 import { GetUserGraphUseCase } from '../../core/usecases/admin/GetUserGraphUseCase.js';
 import { UserRole } from '../../core/types/UserRole.js';
 import { CreateProductDto } from '../dtos/product/CreateProductDto.js';
+import { UpdateProductDto } from '../dtos/product/UpdateProductDto.js';
 import { db } from '../../infrastructure/db/index.js';
 import { conversationLogs } from '../../infrastructure/db/schema/conversationLogs.js';
+import { user as userTable } from '../../infrastructure/db/schema/auth.js';
 import { eq, desc, sql } from 'drizzle-orm';
 import { userSignals } from '../../infrastructure/db/schema/userSignals.js';
 
@@ -83,6 +85,31 @@ export class AdminController {
     return res.json({ success: true, data: users });
   }
 
+  @Authorized(['admin', 'super_admin'])
+  @Get('/users/:userId')
+  async getUserById(@Param('userId') userId: string, @Res() res: Response) {
+    const rows = await db
+      .select({
+        id:               userTable.id,
+        name:             userTable.name,
+        email:            userTable.email,
+        role:             userTable.role,
+        emailVerified:    userTable.emailVerified,
+        skinType:         userTable.skinType,
+        hairType:         userTable.hairType,
+        skinConcerns:     userTable.skinConcerns,
+        discoverySource:  userTable.discoverySource,
+        onboardingDone:   userTable.onboardingDone,
+        createdAt:        userTable.createdAt,
+      })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+
+    if (!rows[0]) return res.status(404).json({ success: false, error: 'User not found' });
+    return res.json({ success: true, data: rows[0] });
+  }
+
   @Authorized(['super_admin'])
   @Patch('/users/:userId/role')
   async updateUserRole(
@@ -117,8 +144,15 @@ export class AdminController {
 
   @Authorized(['admin', 'super_admin'])
   @Patch('/products/:productId')
-  async updateProduct(@Param('productId') productId: string, @Body() dto: any, @Res() res: Response) {
+  async updateProduct(
+    @Param('productId') productId: string,
+    @Body() dto: UpdateProductDto,
+    @Res() res: Response,
+  ) {
     const result = await this.updateProductUseCase.execute({ id: productId, ...dto });
+    if (!result.success) {
+      return res.status(result.error?.includes('not found') ? 404 : 500).json(result);
+    }
     return res.json(result);
   }
 

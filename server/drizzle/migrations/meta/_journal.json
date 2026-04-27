@@ -43,6 +43,20 @@
       "when": 1776127838041,
       "tag": "0005_dusty_ultimates",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777054324785,
+      "tag": "0006_great_lady_deathstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777054345057,
+      "tag": "0007_curvy_shatterstar",
+      "breakpoints": true
     }
   ]
 }

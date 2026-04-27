@@ -1,0 +1,112 @@
+%=============================================================
+%  General Conclusion
+%=============================================================
+\chapter*{General Conclusion}
+\addcontentsline{toc}{chapter}{General Conclusion}
+
+\section*{Summary of Work}
+
+This project set out to design and implement \textbf{LUMINA}, a full-stack
+intelligent e-commerce platform targeting the Tunisian cosmetics market ---
+a sector where no locally-tailored, AI-augmented solution currently exists.
+
+Over three Scrum iterations, the following was delivered:
+
+\begin{itemize}
+  \item \textbf{Iteration 1 --- E-Commerce Core}: a complete shopping experience
+        including email OTP registration, TOTP two-factor authentication,
+        a fully filtered product catalogue backed by PostgreSQL JSONB queries,
+        a persistent cross-device cart, an atomic checkout transaction, and
+        an admin product management interface.
+
+  \item \textbf{Iteration 2 --- AI \& Personalisation}: a RAG chatbot grounded
+        in the live product catalogue, protected by a three-layer prompt
+        injection guard (length, regex, ML classifier), paired with a
+        behavioral signal recommendation engine that personalizes the
+        product feed without any external machine learning service.
+
+  \item \textbf{Iteration 3 --- Administration \& Security}: a full admin
+        dashboard for user and order management, JWT token revocation via
+        Redis blacklisting with fail-closed behavior, role-based access
+        control enforced at the controller layer, and Zod input validation
+        across all API endpoints.
+\end{itemize}
+
+The system is built on a Clean Architecture foundation that enforces strict
+separation between domain logic, application use cases, and infrastructure
+concerns --- making it straightforward to swap out any technology layer
+(ORM, LLM, payment provider) without touching business rules.
+
+\section*{Technical Contributions}
+
+Beyond the product itself, this project produced several reusable patterns:
+
+\begin{itemize}
+  \item An \textbf{abstract \texttt{ITransactionManager}} that allows use cases
+        to run atomic database transactions without importing any ORM ---
+        a clean-architecture-compliant solution to a common problem.
+  \item A \textbf{three-layer prompt injection guard} applicable to any
+        LLM-facing endpoint, combining lightweight and deterministic checks
+        before invoking the costlier ML classifier.
+  \item A \textbf{fail-closed JWT blacklist} pattern using Redis TTLs aligned
+        to token expiration, ensuring zero windows of unauthorized access
+        even in the event of infrastructure failure.
+\end{itemize}
+
+\section*{Limitations}
+
+Honest assessment of the current state of the platform surfaces several
+limitations that were consciously deferred:
+
+\begin{itemize}
+  \item \textbf{Card payments} --- Stripe integration is stubbed and explicitly
+        rejects card payment requests. The infrastructure (PaymentIntent flow,
+        webhook verification) is designed but not wired, pending PCI DSS review.
+  \item \textbf{LLM latency} --- Local Ollama inference on CPU introduces
+        3--8 second response times for the chatbot. A GPU-equipped server
+        or a migration to a hosted API (OpenAI, Mistral) would resolve this
+        in production.
+  \item \textbf{Recommendation depth} --- The current engine uses a weighted
+        signal sum. A collaborative filtering or matrix factorization model
+        would improve cold-start performance for new users.
+  \item \textbf{Deployment} --- The platform is fully containerized with Docker
+        but has not yet been deployed to a public cloud environment.
+\end{itemize}
+
+\section*{Perspectives}
+
+The following improvements are planned for future versions of LUMINA:
+
+\begin{itemize}
+  \item \textbf{Stripe payment integration} --- completing the PaymentIntents
+        flow with webhook-based order confirmation and refund support.
+  \item \textbf{Collaborative filtering} --- replacing the signal-weight model
+        with a user-item matrix factorization approach (ALS or SVD)
+        for better personalization at scale.
+  \item \textbf{Real-time notifications} --- WebSocket or SSE-based order status
+        updates and stock alerts for customers and admins.
+  \item \textbf{Mobile application} --- a React Native client sharing the
+        same API layer, extending LUMINA's reach to mobile-first users
+        in a market where over 70\% of browsing happens on smartphones.
+  \item \textbf{Analytics pipeline} --- an event streaming layer (Kafka or
+        Redis Streams) feeding a business intelligence dashboard with
+        cohort analysis, funnel metrics, and revenue forecasting.
+\end{itemize}
+
+\section*{Personal Reflection}
+
+This project was as much an exercise in software architecture as it was in
+product thinking. Designing a system that is simultaneously maintainable,
+secure, and intelligent --- while staying within the constraints of local
+infrastructure and academic timelines --- required constant prioritization
+and trade-off analysis.
+The Scrum methodology proved invaluable in this regard: short iterations
+forced early delivery of working software and surfaced integration issues
+before they became blockers.
+
+\vspace{1em}
+\noindent
+\textbf{LUMINA} demonstrates that building a production-quality, AI-augmented
+e-commerce platform is achievable without expensive cloud AI subscriptions,
+without compromising user data privacy, and without sacrificing the
+engineering discipline that makes software sustainable in the long run.

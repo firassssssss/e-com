@@ -1,0 +1,330 @@
+%=============================================================
+%  Chapter 6 --- Iteration 2 : AI & Personalisation
+%=============================================================
+\chapter{Implementation --- Iteration 2: Artificial Intelligence and Personalisation}
+
+\section*{Introduction}
+The second iteration enriches the platform with an artificial intelligence layer
+composed of two complementary modules: a \textbf{RAG chatbot} capable of answering
+customer questions about products, and a \textbf{recommendation engine} driven by
+behavioral signal tracking.
+An onboarding questionnaire completes the feature set by personalizing the
+experience from the very first visit.
+
+%-------------------------------------------------------------
+\section{Sprint Planning}
+%-------------------------------------------------------------
+
+\subsection{Sprint Goal}
+
+\begin{tcolorbox}[colback=blue!5, colframe=blue!40, title=Sprint Goal --- Iteration 2]
+Give every customer a personalized experience through a conversational assistant
+grounded in the real catalogue and recommendations tailored to their skin profile
+and browsing behavior.
+\end{tcolorbox}
+
+\subsection{Sprint Backlog}
+
+\begin{table}[H]
+\centering
+\caption{User stories --- Iteration 2}
+\begin{tabularx}{\textwidth}{|c|X|c|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{ID} & \textbf{User Story} & \textbf{Priority} & \textbf{Points} \\
+\hline
+US-11 & As a customer, I want to answer a profile questionnaire (skin type, goals) on first login. & Must & 5 \\
+\hline
+US-12 & As a customer, I want to ask a chatbot questions about products and get accurate answers based on the catalogue. & Must & 13 \\
+\hline
+US-13 & As a customer, I want the chatbot to refuse manipulation attempts (prompt injection). & Must & 8 \\
+\hline
+US-14 & As a customer, I want to receive product recommendations adapted to my skin type and browsing habits. & Must & 8 \\
+\hline
+US-15 & As a customer, I want to add products to a wishlist and view it later. & Should & 3 \\
+\hline
+US-16 & As a customer, I want to leave a review (rating + comment) on a product I have purchased. & Should & 5 \\
+\hline
+\end{tabularx}
+\end{table}
+
+%-------------------------------------------------------------
+\section{Design}
+%-------------------------------------------------------------
+
+\subsection{RAG Service Architecture}
+
+The AI service is decoupled from the main backend as a standalone
+Python/FastAPI microservice, communicating with the Node.js server over
+internal HTTP. This separation allows the AI stack (model, vector store) to
+evolve independently of the business logic.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/arch_component.png}
+  \caption{Component architecture including the RAG service (see Chapter 3)}
+  \label{fig:arch_rag_ref}
+\end{figure}
+
+\subsection{RAG Pipeline}
+
+The RAG pipeline runs in four stages:
+
+\begin{enumerate}
+  \item \textbf{Indexing} --- product sheets (name, description, ingredients,
+        skin type) are transformed into vectors by the
+        \texttt{all-MiniLM-L6-v2} model and stored in the vector store.
+  \item \textbf{Retrieval} --- the user's question is encoded, and the
+        \textit{k} most semantically similar documents are retrieved.
+  \item \textbf{Augmentation} --- the retrieved documents form the context
+        injected into the system prompt sent to the LLM.
+  \item \textbf{Generation} --- Ollama (\texttt{llama3}) produces a response
+        grounded in the documents, reducing hallucinations.
+\end{enumerate}
+
+\subsection{Sequence Diagrams}
+
+The chatbot and recommendation engine interaction flows are illustrated by
+the \textit{seq\_chatbot} and \textit{seq\_recommendations} diagrams
+presented in Chapter 3.
+
+%-------------------------------------------------------------
+\section{Implementation}
+%-------------------------------------------------------------
+
+\subsection{Onboarding Questionnaire}
+
+On first login, a modal prompts the customer to select their skin type
+(normal, dry, oily, combination, sensitive) and cosmetic goals
+(hydration, anti-aging, radiance, etc.).
+These preferences are persisted in the user profile and used as a
+priority filter in the recommendation engine.
+
+\begin{lstlisting}[language=Java, caption=Saving the onboarding profile (OnboardingModal.tsx)]
+const handleComplete = async (profile: OnboardingProfile) => {
+  try {
+    await usersApi.updateProfile(profile);
+    onComplete();   // close modal only on success
+  } catch {
+    setSaveError('Something went wrong. Please try again.');
+  }
+};
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/screen_onboarding.png}
+  \caption{Onboarding modal --- skin profile questionnaire}
+  \label{fig:screen_onboarding}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{RAG Chatbot}
+%-------------------------------------------------------------
+
+\subsubsection{Prompt Injection Guard}
+
+Before being forwarded to the RAG service, every request passes through
+three filtering levels implemented in \texttt{RagHttpsClient}:
+
+\begin{enumerate}
+  \item \textbf{Length check} --- any message exceeding 500 characters is
+        immediately rejected (\texttt{400 Bad Request}).
+  \item \textbf{Regex patterns} --- a set of regular expressions detects classic
+        injection attempts (\textit{ignore previous instructions},
+        \textit{jailbreak}, \textit{system prompt leak}, etc.).
+  \item \textbf{ML classifier} --- a lightweight classifier assigns a confidence
+        score; above the threshold, the request is blocked.
+\end{enumerate}
+
+\begin{lstlisting}[language=Java, caption=Triple guard in RagHttpsClient.ts]
+if (message.length > 500)
+  return { answer: null, blocked: true, reason: 'too_long' };
+
+if (INJECTION_PATTERNS.some(p => p.test(message)))
+  return { answer: null, blocked: true, reason: 'regex_match' };
+
+const score = await this.classifyInjection(message);
+if (score > INJECTION_THRESHOLD)
+  return { answer: null, blocked: true, reason: 'ml_classifier' };
+\end{lstlisting}
+
+\subsubsection{RAG Service (Python / FastAPI)}
+
+The service exposes a single \texttt{POST /query} endpoint that orchestrates
+the vector search and the LLM call.
+
+\begin{lstlisting}[language=Python, caption=RAG pipeline --- main.py (FastAPI)]
+@app.post("/query")
+async def query(req: QueryRequest):
+    # 1. Encode the question
+    embedding = embedder.encode(req.question)
+    # 2. Vector search (top-5)
+    docs = vector_store.search(embedding, k=5)
+    context = "\n\n".join(d.content for d in docs)
+    # 3. Call Ollama with context
+    response = ollama.chat(model="llama3", messages=[
+        {"role": "system", "content": SYSTEM_PROMPT + context},
+        {"role": "user",   "content": req.question}
+    ])
+    return {"answer": response["message"]["content"]}
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_chatbot.png}
+  \caption{Chatbot widget --- answer grounded in the product catalogue}
+  \label{fig:screen_chatbot}
+\end{figure}
+
+\subsubsection{Client Integration}
+
+The chatbot is accessible through a floating widget available on all pages.
+Input is disabled while the response is loading, and an explicit message
+is shown when a request is detected as injection.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.65\textwidth]{figures/screen_chatbot_blocked.png}
+  \caption{Blocked message displayed when injection is detected}
+  \label{fig:screen_chatbot_blocked}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{Recommendation Engine}
+%-------------------------------------------------------------
+
+\subsubsection{Behavioral Signal Tracking}
+
+Every significant interaction by an authenticated customer generates a signal
+persisted in the \texttt{behaviour\_signals} table:
+
+\begin{table}[H]
+\centering
+\caption{Behavioral signal types and their weights}
+\begin{tabular}{|l|l|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{Signal} & \textbf{Trigger} & \textbf{Weight} \\
+\hline
+\texttt{VIEW}       & Product page visited      & 1 \\
+\hline
+\texttt{WISHLIST}   & Added to wishlist         & 3 \\
+\hline
+\texttt{CART\_ADD}  & Added to cart             & 5 \\
+\hline
+\texttt{PURCHASE}   & Order confirmed           & 10 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Recommendation Scoring}
+
+Recommendations are computed server-side on every call to
+\texttt{GET /api/products?recommended=true}.
+PostgreSQL aggregates signals per product for the current user and sorts
+results by descending affinity score.
+The onboarding skin type profile is applied as a priority filter.
+
+\begin{lstlisting}[language=SQL, caption=Simplified recommendation query]
+SELECT p.*, COALESCE(SUM(bs.weight), 0) AS affinity_score
+FROM products p
+LEFT JOIN behaviour_signals bs
+       ON bs.product_id = p.id AND bs.user_id = $userId
+WHERE p.is_active = true
+  AND p.skin_type @> $skinTypeFilter::jsonb
+GROUP BY p.id
+ORDER BY affinity_score DESC, p.created_at DESC
+LIMIT 20;
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_recommendations.png}
+  \caption{Personalized recommendations section on the homepage}
+  \label{fig:screen_recommendations}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{Wishlist}
+%-------------------------------------------------------------
+
+The wishlist is persisted in the database and synchronized with the client
+Zustand store. A product can be added from the product page or from the
+catalogue grid via the heart button, accessible to logged-in users only.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_wishlist.png}
+  \caption{Wishlist page}
+  \label{fig:screen_wishlist}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{Customer Reviews}
+%-------------------------------------------------------------
+
+A customer can submit a review (1--5 star rating + comment) only on a product
+present in their past orders, ensuring review authenticity.
+The verification is performed server-side in \texttt{ReviewController}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/screen_reviews.png}
+  \caption{Customer reviews section on the product page}
+  \label{fig:screen_reviews}
+\end{figure}
+
+%-------------------------------------------------------------
+\section{Sprint Review}
+%-------------------------------------------------------------
+
+\subsection{Delivered Features}
+
+\begin{table}[H]
+\centering
+\caption{Iteration 2 results}
+\begin{tabular}{|c|l|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{ID} & \textbf{User Story} & \textbf{Status} \\
+\hline
+US-11 & Onboarding questionnaire & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-12 & RAG chatbot & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-13 & Prompt injection guard & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-14 & Personalized recommendations & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-15 & Wishlist & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-16 & Customer reviews & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Challenges}
+
+\begin{itemize}
+  \item \textbf{Local LLM latency}: Ollama CPU inference introduces 3--8 seconds
+        per request. An animated loading indicator and streaming response
+        (Server-Sent Events) were added to improve perceived performance.
+  \item \textbf{Indexing quality}: early pipeline versions returned irrelevant
+        documents due to poor chunking. Splitting product sheets by section
+        (ingredients, benefits, usage) significantly improved answer accuracy.
+  \item \textbf{Classifier false positives}: legitimate questions containing
+        technical terms (\textit{ignore}, \textit{system}) were being blocked.
+        The classifier threshold was calibrated against a test set representative
+        of cosmetics vocabulary.
+\end{itemize}
+
+\section*{Conclusion}
+Iteration 2 transformed \textbf{LUMINA} from a standard online store into an
+intelligent platform.
+The RAG chatbot provides conversational access to the catalogue with robust
+protection against abuse, while the behavioral signal-driven recommendation
+engine personalizes the experience without relying on an external machine
+learning model.
+Iteration 3 will finalize the platform by strengthening administration tools
+and security mechanisms.

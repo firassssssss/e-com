@@ -1,0 +1,234 @@
+% ============================================================
+%  LUMINA --- End-of-Study Project Report
+%  ISTIC --- Licence Fondamentale en Informatique
+%  Academic year: 2025--2026
+%  Authors: Sajed Lamouchi & Firas Rahal
+% ============================================================
+
+\documentclass[12pt, a4paper, oneside]{report}
+
+% ── Encoding & Language ──────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+
+% ── Page Geometry ────────────────────────────────────────────
+\usepackage[
+  top=2.5cm, bottom=2.5cm,
+  left=3cm,  right=2.5cm
+]{geometry}
+
+% ── Typography ───────────────────────────────────────────────
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{setspace}
+\onehalfspacing
+
+% ── Colors ───────────────────────────────────────────────────
+\usepackage[table, dvipsnames]{xcolor}
+\definecolor{primaryblue}{RGB}{31, 73, 125}
+\definecolor{accentgray}{RGB}{89, 89, 89}
+\definecolor{lightgray}{RGB}{242, 242, 242}
+\definecolor{codebg}{RGB}{248, 248, 248}
+\definecolor{codeframe}{RGB}{200, 200, 200}
+\definecolor{darkgreen}{RGB}{0, 128, 0}
+
+% ── Graphics & Figures ───────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{
+  font=small,
+  labelfont=bf,
+  skip=6pt
+}
+\graphicspath{{figures/}}
+
+% ── Tables ───────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{longtable}
+\usepackage{array}
+
+% ── Math ─────────────────────────────────────────────────────
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ── Lists ────────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{itemsep=2pt, topsep=4pt}
+\setlist[enumerate]{itemsep=2pt, topsep=4pt}
+
+% ── Code Listings ────────────────────────────────────────────
+\usepackage{listings}
+
+% Define JavaScript/TypeScript-style highlighting (mapped to Java slots)
+\lstdefinelanguage{TypeScript}{
+  keywords={
+    const, let, var, function, return, if, else, for, while, do,
+    class, interface, type, enum, import, export, default, from,
+    async, await, try, catch, finally, throw, new, this, super,
+    extends, implements, public, private, protected, readonly,
+    true, false, null, undefined, void, any, string, number, boolean
+  },
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]',
+  morestring=[b]`
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{primaryblue}\bfseries,
+  commentstyle=\color{accentgray}\itshape,
+  stringstyle=\color{darkgreen},
+  numberstyle=\tiny\color{accentgray},
+  backgroundcolor=\color{codebg},
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{codeframe},
+  numbers=left,
+  numbersep=8pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  tabsize=2,
+  showstringspaces=false,
+  captionpos=b,
+  xleftmargin=12pt,
+  xrightmargin=4pt,
+  aboveskip=10pt,
+  belowskip=6pt
+}
+
+% ── Boxes ─────────────────────────────────────────────────────
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+
+% ── Headers & Footers ────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{\leftmark}}
+\fancyhead[R]{\small\textbf{LUMINA}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Plain style for chapter opening pages
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+% ── Chapter & Section Style ──────────────────────────────────
+\usepackage{titlesec}
+
+\titleformat{\chapter}[display]
+  {\normalfont\Large\bfseries\color{primaryblue}}
+  {\chaptertitlename\ \thechapter}
+  {10pt}
+  {\Huge}
+\titlespacing*{\chapter}{0pt}{-10pt}{30pt}
+
+\titleformat{\section}
+  {\normalfont\large\bfseries\color{primaryblue}}
+  {\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries\color{accentgray}}
+  {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\itshape}
+  {\thesubsubsection}{1em}{}
+
+% ── Hyperlinks ───────────────────────────────────────────────
+\usepackage[
+  colorlinks=true,
+  linkcolor=primaryblue,
+  citecolor=primaryblue,
+  urlcolor=primaryblue,
+  pdftitle={LUMINA --- Intelligent E-Commerce Platform},
+  pdfauthor={Sajed Lamouchi, Firas Rahal},
+  pdfsubject={End-of-Study Project Report --- ISTIC 2025-2026}
+]{hyperref}
+\usepackage{url}
+
+% ── Miscellaneous ────────────────────────────────────────────
+\usepackage{appendix}
+\usepackage{emptypage}    % suppress headers on blank pages
+
+% ── Table of contents depth ──────────────────────────────────
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+
+% ============================================================
+%  DOCUMENT
+% ============================================================
+\begin{document}
+
+% ── Front matter (no page numbers) ──────────────────────────
+\pagenumbering{gobble}
+
+% Cover page
+\include{frontmatter/coverpage}
+
+\cleardoublepage
+
+% ── Roman numerals for front matter ─────────────────────────
+\pagenumbering{roman}
+
+% Dedication
+\include{frontmatter/dedication}
+
+% Acknowledgments
+\include{frontmatter/acknowledgments}
+
+% Abstract
+\include{frontmatter/abstract}
+
+% Table of Contents
+\tableofcontents
+\cleardoublepage
+
+% List of Figures
+\listoffigures
+\addcontentsline{toc}{chapter}{List of Figures}
+\cleardoublepage
+
+% List of Tables
+\listoftables
+\addcontentsline{toc}{chapter}{List of Tables}
+\cleardoublepage
+
+% ── Main matter (Arabic numerals) ───────────────────────────
+\pagenumbering{arabic}
+
+% General Introduction
+\include{frontmatter/introduction}
+
+% ── Chapters ─────────────────────────────────────────────────
+\include{chapters/chapter1}   % Project Context
+\include{chapters/chapter2}   % Requirements Specification
+\include{chapters/chapter3}   % Conceptual Study
+\include{chapters/chapter4}   % State of the Art & Technology Choices
+\include{chapters/chapter5}   % Iteration 1 --- E-Commerce Core
+\include{chapters/chapter6}   % Iteration 2 --- AI & Personalisation
+\include{chapters/chapter7}   % Iteration 3 --- Administration & Security
+
+% General Conclusion
+\include{frontmatter/conclusion}
+
+% ── Bibliography ─────────────────────────────────────────────
+\cleardoublepage
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

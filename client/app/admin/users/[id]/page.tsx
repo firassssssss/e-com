@@ -1,7 +1,7 @@
 ﻿"use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import api from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { ArrowLeft, AlertTriangle, CheckCircle, Eye, ShoppingCart, Search, Heart } from "lucide-react";
 
 interface UserProfile {
@@ -41,14 +41,16 @@ export default function UserDetailPage() {
   const [activeTab, setActiveTab] = useState<'activity' | 'chat'>('activity');
 
   useEffect(() => {
+    if (!id) return;
+    const userId = Array.isArray(id) ? id[0] : id;
     Promise.all([
-      api.get(`/api/admin/users`).then(res => res.data.data.find((u: any) => u.id === id)),
-      api.get(`/api/admin/users/${id}/activity`),
-      api.get(`/api/admin/users/${id}/chat`),
-    ]).then(([user, act, chat]) => {
-      setProfile(user);
-      setActivity(act.data.data);
-      setMessages(chat.data.data);
+      adminApi.getUserById(userId),
+      adminApi.getUserActivity(userId),
+      adminApi.getUserChat(userId),
+    ]).then(([userRes, actRes, chatRes]) => {
+      setProfile(userRes.data.data);
+      setActivity(actRes.data.data);
+      setMessages(chatRes.data.data);
     }).finally(() => setLoading(false));
   }, [id]);
 

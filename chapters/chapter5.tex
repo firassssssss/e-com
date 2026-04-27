@@ -1,0 +1,326 @@
+%=============================================================
+%  Chapter 5 --- Iteration 1 : E-Commerce Core
+%=============================================================
+\chapter{Implementation --- Iteration 1: E-Commerce Core}
+
+\section*{Introduction}
+The first iteration delivers a functional e-commerce foundation covering user
+authentication, catalogue browsing, cart management, and order placement.
+By the end of this sprint, a customer can register, browse products,
+add items to the cart, and complete an order with cash-on-delivery payment.
+
+%-------------------------------------------------------------
+\section{Sprint Planning}
+%-------------------------------------------------------------
+
+\subsection{Sprint Goal}
+
+\begin{tcolorbox}[colback=blue!5, colframe=blue!40, title=Sprint Goal --- Iteration 1]
+Allow a visitor to become an authenticated customer and place their first
+order end-to-end, without any manual intervention.
+\end{tcolorbox}
+
+\subsection{Sprint Backlog}
+
+\begin{table}[H]
+\centering
+\caption{User stories --- Iteration 1}
+\begin{tabularx}{\textwidth}{|c|X|c|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{ID} & \textbf{User Story} & \textbf{Priority} & \textbf{Points} \\
+\hline
+US-01 & As a visitor, I want to register with my email and receive an OTP confirmation code. & Must & 5 \\
+\hline
+US-02 & As a visitor, I want to log in with email and password. & Must & 3 \\
+\hline
+US-03 & As a customer, I want to enable two-factor authentication (TOTP). & Should & 5 \\
+\hline
+US-04 & As a customer, I want to reset my password via email. & Should & 3 \\
+\hline
+US-05 & As a visitor, I want to browse the catalogue with filters (category, price, skin type). & Must & 8 \\
+\hline
+US-06 & As a visitor, I want to view a detailed product page. & Must & 3 \\
+\hline
+US-07 & As a customer, I want to add, update, and remove items in my cart. & Must & 5 \\
+\hline
+US-08 & As a customer, I want to complete checkout with a shipping address. & Must & 8 \\
+\hline
+US-09 & As a customer, I want to view my order history. & Must & 3 \\
+\hline
+US-10 & As an admin, I want to create, edit, and delete products. & Must & 8 \\
+\hline
+\end{tabularx}
+\end{table}
+
+%-------------------------------------------------------------
+\section{Design}
+%-------------------------------------------------------------
+
+\subsection{Use Case Scope}
+
+The use cases covered by this iteration are detailed in the \textit{uc\_auth}
+and \textit{uc\_shopping} diagrams presented in Chapter 2.
+The main actors are: the \textbf{Visitor} (catalogue access),
+the \textbf{Customer} (cart, order, profile), and the \textbf{Admin}
+(product management).
+
+\subsection{Data Model}
+
+The entities involved in this iteration are: \texttt{User}, \texttt{Product},
+\texttt{Category}, \texttt{ProductVariant}, \texttt{Cart}, \texttt{CartItem},
+\texttt{Order}, and \texttt{OrderItem}, whose full class diagram is presented
+in figure~\ref{fig:class_domain} of Chapter 3.
+
+%-------------------------------------------------------------
+\section{Implementation}
+%-------------------------------------------------------------
+
+\subsection{Authentication Module}
+
+\subsubsection{Registration and OTP Verification}
+
+Registration uses the Better Auth \texttt{emailOTP} plugin.
+On form submission, the server creates the user with
+\texttt{emailVerified = false} and sends a six-digit code by email.
+The user is redirected to a verification page; the session is only granted
+after the code is validated.
+
+\begin{lstlisting}[language=Java, caption=Registration flow --- server side (AuthController)]
+@Post('/register')
+async register(@Body() dto: RegisterDto, @Res() res: Response) {
+  const result = await this.authService.createUser(dto);
+  if (!result.success)
+    return res.status(400).json({ message: result.error });
+  // Better Auth emailOTP plugin sends the code automatically
+  return res.status(201).json({ message: 'Check your email.' });
+}
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/screen_register.png}
+  \caption{Registration page --- form and OTP verification}
+  \label{fig:screen_register}
+\end{figure}
+
+\subsubsection{Login and Brute-Force Protection}
+
+The \texttt{POST /api/auth/sign-in/email} endpoint is protected by a Redis
+sliding window: five failed attempts per IP/email within ten minutes trigger
+a temporary lockout with a \texttt{429 Too Many Requests} response.
+
+\begin{lstlisting}[language=Java, caption=Brute-force protection middleware]
+const key = `login_attempts:${ip}:${email}`;
+const attempts = await redisClient.incr(key);
+if (attempts === 1) await redisClient.expire(key, 600); // 10 min window
+if (attempts > 5)
+  return res.status(429).json({ message: 'Too many attempts. Try later.' });
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/screen_login.png}
+  \caption{Login page}
+  \label{fig:screen_login}
+\end{figure}
+
+\subsubsection{Two-Factor Authentication (TOTP)}
+
+The Better Auth \texttt{twoFactor} plugin generates a TOTP secret linked to
+the account and returns a QR code to scan with Google Authenticator or Authy.
+Once enabled, every login requires the six-digit code in addition to the password.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{figures/screen_2fa.png}
+  \caption{Two-factor authentication setup --- TOTP QR Code}
+  \label{fig:screen_2fa}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{Product Catalogue}
+%-------------------------------------------------------------
+
+\subsubsection{Database-Side Filtering}
+
+Product filtering is fully delegated to PostgreSQL via Drizzle ORM,
+avoiding any in-memory filtering.
+Available filters are: category, price range, skin type (JSONB column),
+and case-insensitive text search.
+
+\begin{lstlisting}[language=Java, caption=Filtered query --- ProductRepository.findFiltered()]
+const conditions = [eq(products.isActive, true)];
+if (input.categoryId) conditions.push(eq(products.categoryId, input.categoryId));
+if (input.search)     conditions.push(ilike(products.name, `%${input.search}%`));
+if (input.minPrice)   conditions.push(gte(products.price, input.minPrice));
+if (input.maxPrice)   conditions.push(lte(products.price, input.maxPrice));
+if (input.skinType)
+  conditions.push(sql`${products.skinType} @> ${JSON.stringify([input.skinType])}::jsonb`);
+
+return db.select().from(products).where(and(...conditions));
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_catalogue.png}
+  \caption{Catalogue page --- product grid with sidebar filters}
+  \label{fig:screen_catalogue}
+\end{figure}
+
+\subsubsection{Product Page}
+
+The product page displays images, description, ingredients, customer reviews,
+and a variant selector (size, scent).
+It is server-rendered (SSR) for SEO indexing.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_product.png}
+  \caption{Product page --- details, variants, and add-to-cart button}
+  \label{fig:screen_product}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{Cart}
+%-------------------------------------------------------------
+
+The cart is persisted in the database (\texttt{cart\_items} table),
+enabling session continuity across devices.
+The add, update quantity, and remove operations are exposed via REST API
+and consumed from the Zustand store on the client side.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/screen_cart.png}
+  \caption{Cart page --- summary and checkout button}
+  \label{fig:screen_cart}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{Checkout}
+%-------------------------------------------------------------
+
+The checkout flow is split into two steps (Shipping -> Payment) with
+Zod validation on the client side and stock verification on the server side.
+The order is created inside an atomic transaction: stock decrement,
+order creation, and cart clearing are either all committed or all rolled back.
+
+\begin{lstlisting}[language=Java, caption=Atomic transaction in CheckoutUseCase]
+const order = await this.transactionManager.execute(async () => {
+  for (const item of cart.items) {
+    // validate product + decrement stock
+    product.stock -= item.quantity;
+    await this.productRepo.update(product);
+    orderItems.push(new OrderItem(...));
+  }
+  await this.orderRepo.create(order);
+  await this.cartRepo.clearCart(userId);
+  return order;
+});
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_checkout.png}
+  \caption{Checkout flow --- Shipping and Payment steps}
+  \label{fig:screen_checkout}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{Order History}
+%-------------------------------------------------------------
+
+The \texttt{/orders} page lists all orders for the logged-in customer,
+with real-time status (\textsc{pending}, \textsc{confirmed}, \textsc{shipped},
+\textsc{delivered}, \textsc{cancelled}) and a line-item summary.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_orders.png}
+  \caption{Order history page}
+  \label{fig:screen_orders}
+\end{figure}
+
+%-------------------------------------------------------------
+\subsection{Admin --- Product Management}
+%-------------------------------------------------------------
+
+The admin accesses a dedicated dashboard (\texttt{/admin}) protected by a
+role middleware (\texttt{role: 'admin' | 'super\_admin'}).
+Product management supports creation with image upload, price/stock/variant
+editing, and soft deletion (\texttt{isActive = false}) without physical removal.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/screen_admin_products.png}
+  \caption{Admin interface --- product list and management}
+  \label{fig:screen_admin_products}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/screen_admin_create_product.png}
+  \caption{Admin interface --- product creation form}
+  \label{fig:screen_admin_create_product}
+\end{figure}
+
+%-------------------------------------------------------------
+\section{Sprint Review}
+%-------------------------------------------------------------
+
+\subsection{Delivered Features}
+
+\begin{table}[H]
+\centering
+\caption{Iteration 1 results}
+\begin{tabular}{|c|l|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{ID} & \textbf{User Story} & \textbf{Status} \\
+\hline
+US-01 & Registration + OTP verification & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-02 & Email + password login & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-03 & TOTP two-factor authentication & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-04 & Password reset & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-05 & Catalogue with filters & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-06 & Detailed product page & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-07 & Cart management & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-08 & Checkout (cash on delivery) & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-09 & Order history & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+US-10 & Product CRUD (admin) & \textcolor{green!60!black}{\checkmark\ Done} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Challenges}
+
+\begin{itemize}
+  \item \textbf{Checkout atomicity}: ensuring that stock decrement and order
+        creation are inseparable required introducing an abstract
+        \texttt{ITransactionManager}, injectable into the use case without
+        coupling the domain layer to Drizzle.
+  \item \textbf{JSONB filtering}: array columns (\texttt{skinType},
+        \texttt{ingredients}) stored as \texttt{JSONB} require the PostgreSQL
+        \texttt{@>} operator, not natively exposed by Drizzle; a typed raw SQL
+        fragment was used.
+  \item \textbf{Cart synchronization}: when logging in from a second device,
+        the local (unauthenticated) cart must be merged with the server cart ---
+        the merge logic was implemented in \texttt{CartUseCase}.
+\end{itemize}
+
+\section*{Conclusion}
+This first iteration laid the foundations of the \textbf{LUMINA} e-commerce core.
+All planned user stories were delivered, including the atomic checkout transaction
+and hardened authentication (OTP + 2FA).
+Iteration 2 will build on these foundations to add the artificial intelligence
+layer: RAG chatbot and personalized recommendation engine.
