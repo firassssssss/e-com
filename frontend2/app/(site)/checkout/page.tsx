@@ -1,191 +1,3 @@
-// "use client";
-
-// import { useState } from "react";
-// import Link from "next/link";
-// import { useRouter } from "next/navigation";
-// import { useForm } from "react-hook-form";
-// import { zodResolver } from "@hookform/resolvers/zod";
-// import { z } from "zod";
-// import { TextField } from "@mui/material";
-// import { Check, Lock, ArrowLeft } from "lucide-react";
-
-// const schema = z.object({
-//   firstName: z.string().min(1, "Required"),
-//   lastName: z.string().min(1, "Required"),
-//   email: z.string().email("Invalid email"),
-//   phone: z.string().min(8, "Invalid phone"),
-//   address: z.string().min(5, "Required"),
-//   city: z.string().min(1, "Required"),
-//   country: z.string().min(1, "Required"),
-//   zip: z.string().min(3, "Required"),
-//   cardNumber: z.string().min(16, "Invalid card number"),
-//   expiry: z.string().min(5, "Invalid expiry"),
-//   cvv: z.string().min(3, "Invalid CVV"),
-// });
-
-// type FormData = z.infer<typeof schema>;
-
-// // Mock order summary
-// const ORDER = {
-//   items: [
-//     { name: "Radiance Serum", size: "30ml", qty: 1, price: 68, bg: "#E8C4B8" },
-//     { name: "Barrier Cream", size: "50ml", qty: 2, price: 54, bg: "#D4C5B5" },
-//   ],
-//   subtotal: 176,
-//   shipping: 0,
-//   total: 176,
-// };
-
-// export default function CheckoutPage() {
-//   const router = useRouter();
-//   const [step, setStep] = useState<"shipping" | "payment">("shipping");
-//   const [placing, setPlacing] = useState(false);
-
-//   const { register, handleSubmit, formState: { errors }, trigger } = useForm<FormData>({
-//     resolver: zodResolver(schema),
-//   });
-
-//   const handleNextStep = async () => {
-//     const valid = await trigger(["firstName", "lastName", "email", "phone", "address", "city", "country", "zip"]);
-//     if (valid) setStep("payment");
-//   };
-
-//   const onSubmit = async (data: FormData) => {
-//     setPlacing(true);
-//     // TODO: call ordersApi.create(data)
-//     await new Promise((r) => setTimeout(r, 1500));
-//     router.push("/checkout/success");
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-[#FAF7F2]">
-//       <div className="max-w-6xl mx-auto px-6 py-14">
-//         {/* Header */}
-//         <div className="flex items-center justify-between mb-12">
-//           <Link href="/" className="font-display text-2xl font-light tracking-widest text-[#1A1410]">Lumière</Link>
-//           <div className="flex items-center gap-2 text-xs text-[#6B4F3A]/50">
-//             <Lock size={12} /> Secure checkout
-//           </div>
-//         </div>
-
-//         {/* Steps */}
-//         <div className="flex items-center gap-4 mb-12">
-//           {["Shipping", "Payment"].map((s, i) => {
-//             const active = (i === 0 && step === "shipping") || (i === 1 && step === "payment");
-//             const done = i === 0 && step === "payment";
-//             return (
-//               <div key={s} className="flex items-center gap-3">
-//                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all ${done ? "bg-[#8A9E8A] text-white" : active ? "bg-[#1A1410] text-[#FAF7F2]" : "border border-[#E0D5C8] text-[#6B4F3A]/40"}`}>
-//                   {done ? <Check size={12} /> : i + 1}
-//                 </div>
-//                 <span className={`text-sm tracking-widest ${active ? "text-[#1A1410]" : "text-[#6B4F3A]/40"}`}>{s.toUpperCase()}</span>
-//                 {i === 0 && <div className="w-12 h-px bg-[#E0D5C8] mx-2" />}
-//               </div>
-//             );
-//           })}
-//         </div>
-
-//         <form onSubmit={handleSubmit(onSubmit)}>
-//           <div className="grid lg:grid-cols-3 gap-16">
-//             {/* Form */}
-//             <div className="lg:col-span-2">
-//               {step === "shipping" && (
-//                 <div>
-//                   <h2 className="font-display text-3xl font-light text-[#1A1410] mb-8">Shipping Details</h2>
-//                   <div className="grid grid-cols-2 gap-4 mb-4">
-//                     <TextField {...register("firstName")} label="First name" error={!!errors.firstName} helperText={errors.firstName?.message} fullWidth />
-//                     <TextField {...register("lastName")} label="Last name" error={!!errors.lastName} helperText={errors.lastName?.message} fullWidth />
-//                   </div>
-//                   <div className="grid grid-cols-2 gap-4 mb-4">
-//                     <TextField {...register("email")} label="Email" type="email" error={!!errors.email} helperText={errors.email?.message} fullWidth />
-//                     <TextField {...register("phone")} label="Phone" error={!!errors.phone} helperText={errors.phone?.message} fullWidth />
-//                   </div>
-//                   <TextField {...register("address")} label="Address" error={!!errors.address} helperText={errors.address?.message} fullWidth className="mb-4" />
-//                   <div className="grid grid-cols-3 gap-4 mb-8">
-//                     <TextField {...register("city")} label="City" error={!!errors.city} helperText={errors.city?.message} fullWidth />
-//                     <TextField {...register("zip")} label="ZIP Code" error={!!errors.zip} helperText={errors.zip?.message} fullWidth />
-//                     <TextField {...register("country")} label="Country" error={!!errors.country} helperText={errors.country?.message} fullWidth />
-//                   </div>
-//                   <button
-//                     type="button"
-//                     onClick={handleNextStep}
-//                     className="w-full bg-[#1A1410] text-[#FAF7F2] py-4 text-sm tracking-widest hover:bg-[#C4786A] transition-colors"
-//                   >
-//                     CONTINUE TO PAYMENT
-//                   </button>
-//                 </div>
-//               )}
-
-//               {step === "payment" && (
-//                 <div>
-//                   <div className="flex items-center gap-4 mb-8">
-//                     <button type="button" onClick={() => setStep("shipping")} className="text-[#6B4F3A]/50 hover:text-[#C4786A] transition-colors">
-//                       <ArrowLeft size={16} />
-//                     </button>
-//                     <h2 className="font-display text-3xl font-light text-[#1A1410]">Payment</h2>
-//                   </div>
-//                   <div className="border border-[#E0D5C8] p-6 mb-6">
-//                     <div className="flex items-center gap-2 mb-6">
-//                       <Lock size={14} className="text-[#6B4F3A]/50" />
-//                       <span className="text-xs tracking-widest text-[#6B4F3A]/50">YOUR PAYMENT INFO IS ENCRYPTED</span>
-//                     </div>
-//                     <TextField {...register("cardNumber")} label="Card number" error={!!errors.cardNumber} helperText={errors.cardNumber?.message} fullWidth className="mb-4" placeholder="1234 5678 9012 3456" />
-//                     <div className="grid grid-cols-2 gap-4">
-//                       <TextField {...register("expiry")} label="Expiry (MM/YY)" error={!!errors.expiry} helperText={errors.expiry?.message} fullWidth placeholder="09/27" />
-//                       <TextField {...register("cvv")} label="CVV" error={!!errors.cvv} helperText={errors.cvv?.message} fullWidth placeholder="123" />
-//                     </div>
-//                   </div>
-//                   <button
-//                     type="submit"
-//                     disabled={placing}
-//                     className="w-full flex items-center justify-center gap-3 bg-[#C4786A] text-[#FAF7F2] py-4 text-sm tracking-widest hover:bg-[#6B4F3A] transition-colors disabled:opacity-60"
-//                   >
-//                     {placing ? "PROCESSING..." : `PLACE ORDER — $${ORDER.total}`}
-//                   </button>
-//                 </div>
-//               )}
-//             </div>
-
-//             {/* Order summary */}
-//             <div className="lg:col-span-1">
-//               <div className="border border-[#E0D5C8] p-8">
-//                 <h3 className="font-display text-xl font-light text-[#1A1410] mb-6">Order Summary</h3>
-//                 <div className="flex flex-col gap-5 mb-6">
-//                   {ORDER.items.map((item, i) => (
-//                     <div key={i} className="flex items-center gap-4">
-//                       <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center relative" style={{ backgroundColor: item.bg }}>
-//                         <div className="w-5 h-9 bg-white/40 rounded-sm shadow transform -rotate-3" />
-//                         <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#1A1410] text-[#FAF7F2] text-xs rounded-full flex items-center justify-center">{item.qty}</span>
-//                       </div>
-//                       <div className="flex-1">
-//                         <p className="text-sm text-[#1A1410] font-medium">{item.name}</p>
-//                         <p className="text-xs text-[#6B4F3A]/50">{item.size}</p>
-//                       </div>
-//                       <p className="text-sm text-[#1A1410]">${item.price * item.qty}</p>
-//                     </div>
-//                   ))}
-//                 </div>
-//                 <div className="border-t border-[#E0D5C8] pt-5 flex flex-col gap-3">
-//                   <div className="flex justify-between text-sm text-[#6B4F3A]">
-//                     <span>Subtotal</span><span>${ORDER.subtotal}</span>
-//                   </div>
-//                   <div className="flex justify-between text-sm text-[#6B4F3A]">
-//                     <span>Shipping</span>
-//                     <span className="text-[#8A9E8A]">Free</span>
-//                   </div>
-//                   <div className="flex justify-between border-t border-[#E0D5C8] pt-4 mt-1">
-//                     <span className="font-display text-lg text-[#1A1410]">Total</span>
-//                     <span className="font-display text-lg text-[#1A1410]">${ORDER.total}</span>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// }
 "use client";
 
 import { useState, useEffect } from "react";
@@ -194,9 +6,10 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, Lock, ArrowLeft, Loader2 } from "lucide-react";
-import { cartApi, ordersApi } from "@/lib/api";
+import { Check, Lock, ArrowLeft, Loader2, ShoppingBag } from "lucide-react";
+import { cartApi, ordersApi, productsApi } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
+import { hdImage } from "@/lib/utils";
 
 const schema = z.object({
   firstName:  z.string().min(1, "Required"),
@@ -219,42 +32,76 @@ interface CartItem {
   quantity: number;
   price: number;
   productName?: string;
+  productImage?: string;
 }
 
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  background: "var(--bg-card)",
+  border: "1px solid var(--border)",
+  color: "var(--text-primary)",
+  padding: "0.9rem 1rem",
+  fontSize: "0.9rem",
+  fontFamily: "'DM Sans', sans-serif",
+  outline: "none",
+  transition: "border-color 0.2s",
+  boxSizing: "border-box",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontFamily: "'Syncopate', sans-serif",
+  fontSize: "0.5rem",
+  letterSpacing: "0.2em",
+  textTransform: "uppercase",
+  color: "var(--text-secondary)",
+  display: "block",
+  marginBottom: "0.4rem",
+};
+
+const errorStyle: React.CSSProperties = {
+  fontFamily: "'DM Sans', sans-serif",
+  fontSize: "0.75rem",
+  color: "var(--amber)",
+  marginTop: "0.3rem",
+};
+
 export default function CheckoutPage() {
-  const router  = useRouter();
+  const router = useRouter();
   const { user, loading: authLoading, fetchMe } = useAuthStore();
-  const [step,    setStep]    = useState<"shipping" | "payment">("shipping");
+  const [step, setStep] = useState<"shipping" | "payment">("shipping");
   const [placing, setPlacing] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartLoading, setCartLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    trigger,
-    getValues,
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors }, trigger } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   useEffect(() => { fetchMe(); }, []);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.replace("/auth/login?from=/checkout"); return; }
-
     cartApi.get()
-      .then((res) => setCartItems(res.data?.items ?? []))
+      .then(async (res) => {
+        const items: CartItem[] = res.data?.data?.items ?? res.data?.items ?? [];
+        const enriched = await Promise.all(
+          items.map(async (item) => {
+            try {
+              const p = await productsApi.getById(item.productId);
+              const d = p.data?.data ?? p.data;
+              return { ...item, productName: d?.name, productImage: d?.images?.[0] };
+            } catch { return item; }
+          })
+        );
+        setCartItems(enriched);
+      })
       .catch(() => setApiError("Failed to load cart."))
       .finally(() => setCartLoading(false));
   }, [user, authLoading]);
 
   const handleNextStep = async () => {
-    const valid = await trigger([
-      "firstName", "lastName", "email", "phone",
-      "address", "city", "country", "zip",
-    ]);
+    const valid = await trigger(["firstName", "lastName", "email", "phone", "address", "city", "country", "zip"]);
     if (valid) setStep("payment");
   };
 
@@ -263,215 +110,288 @@ export default function CheckoutPage() {
     setApiError(null);
     try {
       const shippingAddress = `${data.firstName} ${data.lastName}, ${data.address}, ${data.city} ${data.zip}, ${data.country}`;
-      await ordersApi.checkout({
-        shippingAddress,
-        paymentMethod: "stripe",   // or "cash" — wire a toggle if needed
-        currency: "TND",
-      });
-      router.push("/orders");      // redirect to order history on success
+      await ordersApi.checkout({ shippingAddress, paymentMethod: "stripe", currency: "TND" });
+      router.push("/orders");
     } catch (err: any) {
-      setApiError(
-        err?.response?.data?.message ?? "Order failed. Please try again."
-      );
+      setApiError(err?.response?.data?.message ?? "Order failed. Please try again.");
       setPlacing(false);
     }
   };
 
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const shipping = subtotal >= 75 ? 0 : 8;
-  const total    = subtotal + shipping;
+  const total = subtotal + shipping;
 
   if (authLoading || cartLoading) {
     return (
-      <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center">
-        <Loader2 size={32} className="text-[#C4786A] animate-spin" />
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-primary)" }}>
+        <Loader2 size={32} style={{ color: "var(--amber)", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
 
+  const getFocusStyle = (name: string): React.CSSProperties => ({
+    ...inputStyle,
+    borderColor: focusedField === name ? "var(--amber)" : "var(--border)",
+  });
+
   return (
-    <div className="min-h-screen bg-[#FAF7F2]">
-      <div className="max-w-6xl mx-auto px-6 py-14">
+    <div style={{ minHeight: "100vh", background: "var(--bg-primary)", paddingTop: "70px" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "3.5rem 2rem" }}>
+
         {/* Header */}
-        <div className="flex items-center justify-between mb-12">
-          <Link href="/" className="font-display text-2xl font-light tracking-widest text-[#1A1410]">
-            Lumière
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3rem" }}>
+          <Link href="/" style={{ textDecoration: "none" }}>
+            <p style={{ fontFamily: "'Syncopate', sans-serif", fontSize: "0.85rem", letterSpacing: "0.3em", fontWeight: 700, color: "var(--text-primary)" }}>
+              LUM<span style={{ color: "var(--cyan)" }}>I</span>NA
+            </p>
           </Link>
-          <div className="flex items-center gap-2 text-xs text-[#6B4F3A]/50">
-            <Lock size={12} /> Secure checkout
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontFamily: "'Syncopate', sans-serif", fontSize: "0.5rem", letterSpacing: "0.15em", color: "var(--text-muted)" }}>
+            <Lock size={12} /> SECURE CHECKOUT
           </div>
         </div>
 
+        {/* Shimmer line */}
+        <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--amber), transparent)", marginBottom: "3rem", opacity: 0.4 }} />
+
         {/* Step indicator */}
-        <div className="flex items-center gap-4 mb-12">
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "3rem" }}>
           {(["Shipping", "Payment"] as const).map((s, i) => {
             const active = (i === 0 && step === "shipping") || (i === 1 && step === "payment");
-            const done   = i === 0 && step === "payment";
+            const done = i === 0 && step === "payment";
             return (
-              <div key={s} className="flex items-center gap-3">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all ${
-                  done   ? "bg-[#8A9E8A] text-white" :
-                  active ? "bg-[#1A1410] text-[#FAF7F2]" :
-                           "border border-[#E0D5C8] text-[#6B4F3A]/40"
-                }`}>
+              <div key={s} style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "'Syncopate', sans-serif", fontSize: "0.6rem",
+                  background: done ? "rgba(0,255,255,0.15)" : active ? "var(--amber)" : "transparent",
+                  border: done ? "1px solid var(--cyan)" : active ? "1px solid var(--amber)" : "1px solid var(--border)",
+                  color: done ? "var(--cyan)" : active ? "#000" : "var(--text-muted)",
+                  transition: "all 0.3s",
+                }}>
                   {done ? <Check size={12} /> : i + 1}
                 </div>
-                <span className={`text-sm tracking-widest ${active ? "text-[#1A1410]" : "text-[#6B4F3A]/40"}`}>
-                  {s.toUpperCase()}
+                <span style={{
+                  fontFamily: "'Syncopate', sans-serif", fontSize: "0.5rem", letterSpacing: "0.2em", textTransform: "uppercase",
+                  color: active ? "var(--text-primary)" : "var(--text-muted)",
+                  transition: "color 0.3s",
+                }}>
+                  {s}
                 </span>
-                {i === 0 && <div className="w-12 h-px bg-[#E0D5C8] mx-2" />}
+                {i === 0 && <div style={{ width: 48, height: 1, background: "var(--border)", margin: "0 0.5rem" }} />}
               </div>
             );
           })}
         </div>
 
         {apiError && (
-          <div className="mb-6 p-4 border border-[#C4786A] text-[#C4786A] text-sm">
+          <div style={{ marginBottom: "1.5rem", padding: "1rem 1.25rem", border: "1px solid var(--amber)", background: "rgba(255,95,31,0.05)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.9rem", color: "var(--amber)" }}>
             {apiError}
           </div>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid lg:grid-cols-3 gap-16">
-            {/* Form */}
-            <div className="lg:col-span-2">
+          <div style={{ display: "grid", gap: "4rem" }} className="checkout-grid">
+
+            {/* ── Form ── */}
+            <div>
               {step === "shipping" && (
                 <div>
-                  <h2 className="font-display text-3xl font-light text-[#1A1410] mb-8">
+                  <p style={{ fontFamily: "'Syncopate', sans-serif", fontSize: "0.5rem", letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--amber)", marginBottom: "0.75rem" }}>
+                    Step 1
+                  </p>
+                  <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: "2.5rem", fontWeight: 300, color: "var(--text-primary)", marginBottom: "2rem" }}>
                     Shipping Details
                   </h2>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <input {...register("firstName")} placeholder="First name"
-                        className="w-full border border-[#E0D5C8] bg-transparent px-4 py-3 text-sm focus:outline-none focus:border-[#C4786A]" />
-                      {errors.firstName && <p className="text-xs text-[#C4786A] mt-1">{errors.firstName.message}</p>}
-                    </div>
-                    <div>
-                      <input {...register("lastName")} placeholder="Last name"
-                        className="w-full border border-[#E0D5C8] bg-transparent px-4 py-3 text-sm focus:outline-none focus:border-[#C4786A]" />
-                      {errors.lastName && <p className="text-xs text-[#C4786A] mt-1">{errors.lastName.message}</p>}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <input {...register("email")} type="email" placeholder="Email"
-                        className="w-full border border-[#E0D5C8] bg-transparent px-4 py-3 text-sm focus:outline-none focus:border-[#C4786A]" />
-                      {errors.email && <p className="text-xs text-[#C4786A] mt-1">{errors.email.message}</p>}
-                    </div>
-                    <div>
-                      <input {...register("phone")} placeholder="Phone"
-                        className="w-full border border-[#E0D5C8] bg-transparent px-4 py-3 text-sm focus:outline-none focus:border-[#C4786A]" />
-                      {errors.phone && <p className="text-xs text-[#C4786A] mt-1">{errors.phone.message}</p>}
-                    </div>
-                  </div>
-                  <div className="mb-4">
-                    <input {...register("address")} placeholder="Address"
-                      className="w-full border border-[#E0D5C8] bg-transparent px-4 py-3 text-sm focus:outline-none focus:border-[#C4786A]" />
-                    {errors.address && <p className="text-xs text-[#C4786A] mt-1">{errors.address.message}</p>}
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 mb-8">
-                    {(["city", "zip", "country"] as const).map((f) => (
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+                    {(["firstName", "lastName"] as const).map((f) => (
                       <div key={f}>
-                        <input {...register(f)} placeholder={f.charAt(0).toUpperCase() + f.slice(1)}
-                          className="w-full border border-[#E0D5C8] bg-transparent px-4 py-3 text-sm focus:outline-none focus:border-[#C4786A]" />
-                        {errors[f] && <p className="text-xs text-[#C4786A] mt-1">{errors[f]?.message}</p>}
+                        <label style={labelStyle}>{f === "firstName" ? "First Name" : "Last Name"}</label>
+                        <input {...register(f)} placeholder={f === "firstName" ? "Firas" : "Rahal"} style={getFocusStyle(f)}
+                          onFocus={() => setFocusedField(f)} onBlur={() => setFocusedField(null)} />
+                        {errors[f] && <p style={errorStyle}>{errors[f]?.message}</p>}
                       </div>
                     ))}
                   </div>
-                  <button type="button" onClick={handleNextStep}
-                    className="w-full bg-[#1A1410] text-[#FAF7F2] py-4 text-sm tracking-widest hover:bg-[#C4786A] transition-colors">
-                    CONTINUE TO PAYMENT
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+                    {(["email", "phone"] as const).map((f) => (
+                      <div key={f}>
+                        <label style={labelStyle}>{f.charAt(0).toUpperCase() + f.slice(1)}</label>
+                        <input {...register(f)} type={f === "email" ? "email" : "text"} placeholder={f === "email" ? "you@email.com" : "+216 XX XXX XXX"} style={getFocusStyle(f)}
+                          onFocus={() => setFocusedField(f)} onBlur={() => setFocusedField(null)} />
+                        {errors[f] && <p style={errorStyle}>{errors[f]?.message}</p>}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={labelStyle}>Address</label>
+                    <input {...register("address")} placeholder="123 Rue de la Paix" style={getFocusStyle("address")}
+                      onFocus={() => setFocusedField("address")} onBlur={() => setFocusedField(null)} />
+                    {errors.address && <p style={errorStyle}>{errors.address.message}</p>}
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "2.5rem" }}>
+                    {(["city", "zip", "country"] as const).map((f) => (
+                      <div key={f}>
+                        <label style={labelStyle}>{f.charAt(0).toUpperCase() + f.slice(1)}</label>
+                        <input {...register(f)} placeholder={f === "city" ? "Tunis" : f === "zip" ? "1000" : "Tunisia"} style={getFocusStyle(f)}
+                          onFocus={() => setFocusedField(f)} onBlur={() => setFocusedField(null)} />
+                        {errors[f] && <p style={errorStyle}>{errors[f]?.message}</p>}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button type="button" onClick={handleNextStep} style={{
+                    width: "100%", padding: "1rem",
+                    fontFamily: "'Syncopate', sans-serif", fontSize: "0.55rem", letterSpacing: "0.25em", textTransform: "uppercase",
+                    background: "var(--amber)", color: "#000", border: "none", cursor: "pointer",
+                    transition: "opacity 0.2s",
+                  }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                  >
+                    CONTINUE TO PAYMENT →
                   </button>
                 </div>
               )}
 
               {step === "payment" && (
                 <div>
-                  <div className="flex items-center gap-4 mb-8">
-                    <button type="button" onClick={() => setStep("shipping")}
-                      className="text-[#6B4F3A]/50 hover:text-[#C4786A] transition-colors">
-                      <ArrowLeft size={16} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem" }}>
+                    <button type="button" onClick={() => setStep("shipping")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", transition: "color 0.2s" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--amber)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                    >
+                      <ArrowLeft size={18} />
                     </button>
-                    <h2 className="font-display text-3xl font-light text-[#1A1410]">Payment</h2>
+                    <div>
+                      <p style={{ fontFamily: "'Syncopate', sans-serif", fontSize: "0.5rem", letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--amber)", marginBottom: "0.4rem" }}>Step 2</p>
+                      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: "2.5rem", fontWeight: 300, color: "var(--text-primary)" }}>Payment</h2>
+                    </div>
                   </div>
-                  <div className="border border-[#E0D5C8] p-6 mb-6">
-                    <div className="flex items-center gap-2 mb-6">
-                      <Lock size={14} className="text-[#6B4F3A]/50" />
-                      <span className="text-xs tracking-widest text-[#6B4F3A]/50">
+
+                  <div style={{ border: "1px solid var(--border)", background: "var(--bg-card)", padding: "1.75rem", marginBottom: "1.5rem" }}>
+                    {/* amber shimmer */}
+                    <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--amber), transparent)", marginBottom: "1.5rem", opacity: 0.4 }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
+                      <Lock size={13} style={{ color: "var(--cyan)" }} />
+                      <span style={{ fontFamily: "'Syncopate', sans-serif", fontSize: "0.45rem", letterSpacing: "0.2em", color: "var(--text-muted)" }}>
                         YOUR PAYMENT INFO IS ENCRYPTED
                       </span>
                     </div>
-                    <div className="mb-4">
-                      <input {...register("cardNumber")} placeholder="Card number (1234 5678 9012 3456)"
-                        className="w-full border border-[#E0D5C8] bg-transparent px-4 py-3 text-sm focus:outline-none focus:border-[#C4786A]" />
-                      {errors.cardNumber && <p className="text-xs text-[#C4786A] mt-1">{errors.cardNumber.message}</p>}
+
+                    <div style={{ marginBottom: "1rem" }}>
+                      <label style={labelStyle}>Card Number</label>
+                      <input {...register("cardNumber")} placeholder="1234 5678 9012 3456" style={getFocusStyle("cardNumber")}
+                        onFocus={() => setFocusedField("cardNumber")} onBlur={() => setFocusedField(null)} />
+                      {errors.cardNumber && <p style={errorStyle}>{errors.cardNumber.message}</p>}
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                       <div>
-                        <input {...register("expiry")} placeholder="MM/YY"
-                          className="w-full border border-[#E0D5C8] bg-transparent px-4 py-3 text-sm focus:outline-none focus:border-[#C4786A]" />
-                        {errors.expiry && <p className="text-xs text-[#C4786A] mt-1">{errors.expiry.message}</p>}
+                        <label style={labelStyle}>Expiry</label>
+                        <input {...register("expiry")} placeholder="MM / YY" style={getFocusStyle("expiry")}
+                          onFocus={() => setFocusedField("expiry")} onBlur={() => setFocusedField(null)} />
+                        {errors.expiry && <p style={errorStyle}>{errors.expiry.message}</p>}
                       </div>
                       <div>
-                        <input {...register("cvv")} placeholder="CVV"
-                          className="w-full border border-[#E0D5C8] bg-transparent px-4 py-3 text-sm focus:outline-none focus:border-[#C4786A]" />
-                        {errors.cvv && <p className="text-xs text-[#C4786A] mt-1">{errors.cvv.message}</p>}
+                        <label style={labelStyle}>CVV</label>
+                        <input {...register("cvv")} placeholder="•••" style={getFocusStyle("cvv")}
+                          onFocus={() => setFocusedField("cvv")} onBlur={() => setFocusedField(null)} />
+                        {errors.cvv && <p style={errorStyle}>{errors.cvv.message}</p>}
                       </div>
                     </div>
                   </div>
-                  <button type="submit" disabled={placing}
-                    className="w-full flex items-center justify-center gap-3 bg-[#C4786A] text-[#FAF7F2] py-4 text-sm tracking-widest hover:bg-[#6B4F3A] transition-colors disabled:opacity-60">
+
+                  <button type="submit" disabled={placing} style={{
+                    width: "100%", padding: "1rem",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "0.75rem",
+                    fontFamily: "'Syncopate', sans-serif", fontSize: "0.55rem", letterSpacing: "0.25em", textTransform: "uppercase",
+                    background: placing ? "rgba(255,95,31,0.5)" : "var(--amber)", color: "#000",
+                    border: "none", cursor: placing ? "not-allowed" : "pointer",
+                    transition: "opacity 0.2s",
+                  }}
+                    onMouseEnter={(e) => { if (!placing) e.currentTarget.style.opacity = "0.85"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                  >
                     {placing
-                      ? <><Loader2 size={14} className="animate-spin" /> PROCESSING...</>
-                      : `PLACE ORDER — $${total.toFixed(2)}`}
+                      ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> PROCESSING...</>
+                      : `PLACE ORDER — ${total.toFixed(2)} TND`}
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Order summary */}
-            <div className="lg:col-span-1">
-              <div className="border border-[#E0D5C8] p-8">
-                <h3 className="font-display text-xl font-light text-[#1A1410] mb-6">Order Summary</h3>
-                <div className="flex flex-col gap-5 mb-6">
+            {/* ── Order Summary ── */}
+            <div>
+              <div style={{ border: "1px solid var(--border)", background: "var(--bg-card)", padding: "2rem", position: "sticky", top: "90px" }}>
+                <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--amber), transparent)", marginBottom: "1.5rem", opacity: 0.4 }} />
+                <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: "1.5rem", fontWeight: 300, color: "var(--text-primary)", marginBottom: "1.5rem" }}>
+                  Order Summary
+                </h3>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", marginBottom: "1.5rem" }}>
                   {cartItems.map((item) => (
-                    <div key={item.productId} className="flex items-center gap-4">
-                      <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-[#E8C4B8] relative">
-                        <div className="w-5 h-9 bg-white/40 rounded-sm shadow transform -rotate-3" />
-                        <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#1A1410] text-[#FAF7F2] text-xs rounded-full flex items-center justify-center">
+                    <div key={item.productId} style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                      <div style={{ width: 52, height: 52, flexShrink: 0, background: "var(--bg-secondary)", overflow: "hidden", position: "relative" }}>
+                        {item.productImage ? (
+                          <img src={hdImage(item.productImage)} alt={item.productName ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <ShoppingBag size={16} style={{ color: "var(--border)" }} />
+                          </div>
+                        )}
+                        <span style={{
+                          position: "absolute", top: -6, right: -6,
+                          width: 18, height: 18, borderRadius: "50%",
+                          background: "var(--amber)", color: "#000",
+                          fontFamily: "'Syncopate', sans-serif", fontSize: "0.5rem",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
                           {item.quantity}
                         </span>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-[#1A1410] font-medium">
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1rem", color: "var(--text-primary)", lineHeight: 1.3 }}>
                           {item.productName ?? item.productId}
                         </p>
                       </div>
-                      <p className="text-sm text-[#1A1410]">
-                        ${(item.price * item.quantity).toFixed(2)}
+                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: "var(--text-secondary)", flexShrink: 0 }}>
+                        {(item.price * item.quantity).toFixed(2)} TND
                       </p>
                     </div>
                   ))}
                 </div>
-                <div className="border-t border-[#E0D5C8] pt-5 flex flex-col gap-3">
-                  <div className="flex justify-between text-sm text-[#6B4F3A]">
-                    <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
+
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                    <span>Subtotal</span><span>{subtotal.toFixed(2)} TND</span>
                   </div>
-                  <div className="flex justify-between text-sm text-[#6B4F3A]">
+                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                     <span>Shipping</span>
-                    <span className={shipping === 0 ? "text-[#8A9E8A]" : ""}>
-                      {shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}
+                    <span style={{ color: shipping === 0 ? "var(--cyan)" : "var(--text-secondary)" }}>
+                      {shipping === 0 ? "Free" : `${shipping.toFixed(2)} TND`}
                     </span>
                   </div>
-                  <div className="flex justify-between border-t border-[#E0D5C8] pt-4 mt-1">
-                    <span className="font-display text-lg text-[#1A1410]">Total</span>
-                    <span className="font-display text-lg text-[#1A1410]">${total.toFixed(2)}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: "1rem", marginTop: "0.25rem" }}>
+                    <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.25rem", color: "var(--text-primary)" }}>Total</span>
+                    <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.25rem", color: "var(--text-primary)" }}>{total.toFixed(2)} TND</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </form>
+
+        <style>{`
+          @media (min-width: 1024px) {
+            .checkout-grid { grid-template-columns: 1fr 380px !important; }
+          }
+        `}</style>
       </div>
     </div>
   );

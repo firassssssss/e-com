@@ -14,10 +14,13 @@ export const user = pgTable("user", {
   skinConcerns: text("skin_concerns"),
   discoverySource: text("discovery_source"),
   onboardingDone: boolean("onboarding_done").default(false).notNull(),
+  // ✅ Add these two lines:
+  twoFactorEnabled: boolean("two_factor_enabled").default(false).notNull(),
+  banned: boolean("banned").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
-    .$onUpdate(() => /* @PURE */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 

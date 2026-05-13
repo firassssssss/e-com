@@ -5,7 +5,8 @@ import Navbar from "@/components/site/Navbar";
 import ChatbotWidget from "@/components/site/chatbot/ChatbotWidget";
 import OnboardingModal from "@/components/site/OnboardingModal";
 import CustomCursor from "@/components/site/CustomCursor";
-import IntroAnimation from "@/components/site/IntroAnimation";
+import dynamic from 'next/dynamic';
+const IntroAnimation = dynamic(() => import('@/components/site/IntroAnimation'), { ssr: false });
 import { useAuthStore } from "@/lib/authStore";
 import api from "@/lib/api";
 

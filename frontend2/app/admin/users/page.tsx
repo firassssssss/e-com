@@ -1,520 +1,183 @@
-// "use client";
-// import Link from 'next/link';
-// import { useEffect, useState } from "react";
-// import { useRouter } from "next/navigation";
-// import api from "@/lib/api";
-// import { Eye, Shield, ShieldOff, UserMinus } from "lucide-react";
-
-// interface User {
-//   id: string;
-//   name: string;
-//   email: string;
-//   role: string;
-//   emailVerified: boolean;
-//   createdAt: string;
-// }
-
-// export default function AdminUsersPage() {
-//   const router = useRouter();
-//   const [users, setUsers] = useState<User[]>([]);
-//   const [loading, setLoading] = useState(true);
-//   const [currentUserRole, setCurrentUserRole] = useState<string>("");
-
-//   useEffect(() => {
-//     Promise.all([
-//       api.get("/api/admin/users"),
-//       api.get("/api/v1/users/me")
-//     ]).then(([usersRes, meRes]) => {
-//       setUsers(usersRes.data.data);
-//       setCurrentUserRole(meRes.data.data.role);
-//     }).finally(() => setLoading(false));
-//   }, []);
-
-//   const promoteUser = async (userId: string, newRole: string) => {
-//     await api.patch(`/api/admin/users/${userId}/role`, { role: newRole });
-//     setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
-//   };
-
-//   const suspendUser = async (userId: string) => {
-//     if (!confirm("Are you sure you want to suspend this user?")) return;
-//     await api.delete(`/api/admin/users/${userId}`);
-//     setUsers(users.filter(u => u.id !== userId));
-//   };
-
-//   if (loading) return <div className="p-8">Loading users...</div>;
-
-//   const isSuperAdmin = currentUserRole === "super_admin";
-
-//   return (
-//     <div className="p-8">
-//       <h1 className="text-3xl font-light text-[#1A1410] mb-6">User Management</h1>
-//       <div className="bg-white rounded-sm border border-[#E0D5C8] overflow-hidden">
-//         <table className="w-full text-sm">
-//           <thead className="bg-[#F0EAE2] text-[#6B4F3A] text-left">
-//             <tr>
-//               <th className="px-6 py-4 font-medium">Name</th>
-//               <th className="px-6 py-4 font-medium">Email</th>
-//               <th className="px-6 py-4 font-medium">Role</th>
-//               <th className="px-6 py-4 font-medium">Verified</th>
-//               <th className="px-6 py-4 font-medium">Joined</th>
-//               {isSuperAdmin && <th className="px-6 py-4 font-medium">Actions</th>}
-//               <th className="px-6 py-4 font-medium">View</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {users.map((user) => (
-//               <tr key={user.id} className="border-t border-[#E0D5C8] hover:bg-[#FAF7F2]">
-//                 <td className="px-6 py-4">{user.name}</td>
-//                 <td className="px-6 py-4">{user.email}</td>
-//                 <td className="px-6 py-4">
-//                   <span className={`px-2 py-1 text-xs rounded-full ${
-//                     user.role === "admin" || user.role === "super_admin"
-//                       ? "bg-[#C4786A]/20 text-[#C4786A]" 
-//                       : "bg-[#E0D5C8]/50 text-[#6B4F3A]"
-//                   }`}>
-//                     {user.role}
-//                   </span>
-//                 </td>
-//                 <td className="px-6 py-4">{user.emailVerified ? "✅" : "❌"}</td>
-//                 <td className="px-6 py-4 text-[#6B4F3A]/60">
-//                   {new Date(user.createdAt).toLocaleDateString()}
-//                 </td>
-//                 {isSuperAdmin && (
-//                   <td className="px-6 py-4">
-//                     <div className="flex gap-2">
-//                       {user.role !== "admin" && user.role !== "super_admin" && (
-//                         <button onClick={() => promoteUser(user.id, "admin")} className="p-1 hover:text-[#C4786A]" title="Promote to admin">
-//                           <Shield size={16} />
-//                         </button>
-//                       )}
-//                       {user.role === "admin" && (
-//                         <button onClick={() => promoteUser(user.id, "user")} className="p-1 hover:text-[#C4786A]" title="Demote to user">
-//                           <ShieldOff size={16} />
-//                         </button>
-//                       )}
-//                       <button onClick={() => suspendUser(user.id)} className="p-1 hover:text-red-500" title="Suspend user">
-//                         <UserMinus size={16} />
-//                       </button>
-//                     </div>
-//                   </td>
-//                 )}
-//                 <td className="px-6 py-4">
-//                   <Link href={`/admin/users/${user.id}`} className="p-1 hover:text-[#C4786A]" title="View user details">
-//                     <Eye size={16} />
-//                   </Link>
-//                 </td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import api from "@/lib/api";
-import { Eye, Shield, ShieldOff, UserMinus, Search } from "lucide-react";
+import { Shield, ShieldOff, UserMinus, Search, ExternalLink, CheckCircle2, Clock, Crown, User } from "lucide-react";
+import { useD } from "@/components/admin/AdminTokensContext";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  emailVerified: boolean;
-  createdAt: string;
+interface UserData {
+  id: string; name: string; email: string; role: string;
+  emailVerified: boolean; createdAt: string;
 }
 
-const S: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#0A0A0F",
-    color: "#fff",
-    padding: "0",
-  },
-  header: {
-    marginBottom: "2rem",
-  },
-  title: {
-    fontFamily: "'Syncopate', sans-serif",
-    fontSize: "1.1rem",
-    letterSpacing: "0.25em",
-    textTransform: "uppercase" as const,
-    color: "#fff",
-    fontWeight: 700,
-    marginBottom: "0.4rem",
-  },
-  subtitle: {
-    fontFamily: "'Syncopate', sans-serif",
-    fontSize: "0.5rem",
-    letterSpacing: "0.2em",
-    textTransform: "uppercase" as const,
-    color: "rgba(255,255,255,0.3)",
-  },
-  searchWrap: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-    background: "#111118",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "4px",
-    padding: "0.65rem 1rem",
-    marginBottom: "1.5rem",
-    maxWidth: "420px",
-    transition: "border-color 0.2s",
-  },
-  searchInput: {
-    background: "none",
-    border: "none",
-    outline: "none",
-    color: "#fff",
-    fontFamily: "'Syncopate', sans-serif",
-    fontSize: "0.55rem",
-    letterSpacing: "0.15em",
-    textTransform: "uppercase" as const,
-    flex: 1,
-    minWidth: 0,
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    fontSize: "0.75rem",
-  },
-  thead: {
-    borderBottom: "1px solid rgba(255,255,255,0.1)",
-  },
-  th: {
-    fontFamily: "'Syncopate', sans-serif",
-    fontSize: "0.48rem",
-    letterSpacing: "0.18em",
-    textTransform: "uppercase" as const,
-    color: "rgba(255,255,255,0.35)",
-    padding: "0.85rem 1rem",
-    textAlign: "left" as const,
-    fontWeight: 400,
-  },
-  td: {
-    padding: "0.95rem 1rem",
-    borderBottom: "1px solid rgba(255,255,255,0.05)",
-    color: "rgba(255,255,255,0.8)",
-    fontFamily: "monospace",
-    fontSize: "0.78rem",
-  },
-  nameCell: {
-    padding: "0.95rem 1rem",
-    borderBottom: "1px solid rgba(255,255,255,0.05)",
-    color: "#fff",
-    fontWeight: 600,
-    fontSize: "0.82rem",
-  },
-  idCell: {
-    padding: "0.95rem 1rem",
-    borderBottom: "1px solid rgba(255,255,255,0.05)",
-    color: "rgba(255,95,31,0.7)",
-    fontFamily: "monospace",
-    fontSize: "0.68rem",
-    letterSpacing: "0.05em",
-  },
-  emptyRow: {
-    padding: "3rem",
-    textAlign: "center" as const,
-    color: "rgba(255,255,255,0.2)",
-    fontFamily: "'Syncopate', sans-serif",
-    fontSize: "0.5rem",
-    letterSpacing: "0.2em",
-    textTransform: "uppercase" as const,
-  },
-};
-
-function RoleBadge({ role }: { role: string }) {
-  const isElevated = role === "admin" || role === "super_admin";
-  return (
-    <span style={{
-      display: "inline-block",
-      padding: "0.25rem 0.6rem",
-      borderRadius: "2px",
-      fontFamily: "'Syncopate', sans-serif",
-      fontSize: "0.42rem",
-      letterSpacing: "0.15em",
-      textTransform: "uppercase",
-      background: isElevated ? "rgba(255,95,31,0.12)" : "rgba(255,255,255,0.06)",
-      color: isElevated ? "#FF5F1F" : "rgba(255,255,255,0.45)",
-      border: `1px solid ${isElevated ? "rgba(255,95,31,0.3)" : "rgba(255,255,255,0.1)"}`,
-    }}>
-      {role}
-    </span>
-  );
+function getInitials(name: string) {
+  return name.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase();
+}
+function getAccentColor(role: string) {
+  if (role==="super_admin") return { primary:"#FF5F1F", secondary:"rgba(255,95,31,0.15)",  border:"rgba(255,95,31,0.3)"  };
+  if (role==="admin")       return { primary:"#FFAA00", secondary:"rgba(255,170,0,0.1)",   border:"rgba(255,170,0,0.25)" };
+  return                           { primary:"#00FFFF", secondary:"rgba(0,255,255,0.06)",  border:"rgba(0,255,255,0.15)" };
 }
 
-function ActionBtn({
-  onClick, title, color = "rgba(255,255,255,0.4)", children
-}: {
-  onClick: () => void;
-  title: string;
-  color?: string;
-  children: React.ReactNode;
-}) {
-  const [hovered, setHovered] = useState(false);
+function ActionBtn({ onClick, label, color, danger }: { onClick:()=>void; label:string; color:string; danger?:boolean }) {
+  const D = useD();
+  const [h, setH] = useState(false);
   return (
-    <button
-      onClick={onClick}
-      title={title}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-        padding: "0.35rem",
-        color: hovered ? color : "rgba(255,255,255,0.25)",
-        transition: "color 0.15s",
-        display: "flex",
-        alignItems: "center",
-      }}
-    >
-      {children}
+    <button onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
+      style={{ background:h?`${danger?"rgba(255,80,80,0.1)":"rgba(255,95,31,0.1)"}`:"none", border:`1px solid ${h?color:D.border}`, cursor:"pointer", padding:"0.3rem 0.6rem", color:h?color:D.dim, fontFamily:D.font, fontSize:"0.37rem", letterSpacing:"0.12em", textTransform:"uppercase" as const, transition:"all 0.15s" }}>
+      {label}
     </button>
   );
 }
 
-export default function AdminUsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentUserRole, setCurrentUserRole] = useState<string>("");
-  const [query, setQuery] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
-
-  useEffect(() => {
-    Promise.all([
-      api.get("/api/admin/users"),
-      api.get("/api/v1/users/me"),
-    ]).then(([usersRes, meRes]) => {
-      setUsers(usersRes.data.data);
-      setCurrentUserRole(meRes.data.data.role);
-    }).finally(() => setLoading(false));
-  }, []);
-
-  const promoteUser = async (userId: string, newRole: string) => {
-    await api.patch(`/api/admin/users/${userId}/role`, { role: newRole });
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-  };
-
-  const suspendUser = async (userId: string) => {
-    if (!confirm("Suspend this user?")) return;
-    await api.delete(`/api/admin/users/${userId}`);
-    setUsers(prev => prev.filter(u => u.id !== userId));
-  };
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(u =>
-      u.name.toLowerCase().includes(q) ||
-      u.id.toLowerCase().includes(q)
-    );
-  }, [users, query]);
-
-  const isSuperAdmin = currentUserRole === "super_admin";
-
-  if (loading) {
-    return (
-      <div style={{ ...S.page, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ fontFamily: "'Syncopate', sans-serif", fontSize: "0.5rem", letterSpacing: "0.3em", color: "rgba(255,255,255,0.3)" }}>
-          Loading users...
-        </p>
-      </div>
-    );
-  }
+function UserCard({ user, isSuperAdmin, onPromote, onSuspend }: { user:UserData; isSuperAdmin:boolean; onPromote:(id:string,role:string)=>void; onSuspend:(id:string)=>void }) {
+  const D = useD();
+  const [hovered, setHovered] = useState(false);
+  const accent = getAccentColor(user.role);
+  const initials = getInitials(user.name);
+  const joinDate = new Date(user.createdAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+  const isElevated = user.role==="admin"||user.role==="super_admin";
 
   return (
-    <div style={S.page}>
-      {/* Header */}
-      <div style={S.header}>
-        <p style={S.title}>User Management</p>
-        <p style={S.subtitle}>{users.length} registered accounts</p>
-      </div>
-
-      {/* Search */}
-      <div
-        style={{
-          ...S.searchWrap,
-          borderColor: searchFocused ? "rgba(255,95,31,0.5)" : "rgba(255,255,255,0.1)",
-          boxShadow: searchFocused ? "0 0 0 2px rgba(255,95,31,0.08)" : "none",
-        }}
-      >
-        <Search size={13} color={searchFocused ? "#FF5F1F" : "rgba(255,255,255,0.3)"} style={{ flexShrink: 0 }} />
-        <input
-          style={S.searchInput}
-          placeholder="Search by name or ID..."
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          onFocus={() => setSearchFocused(true)}
-          onBlur={() => setSearchFocused(false)}
-        />
-        {query && (
-          <button
-            onClick={() => setQuery("")}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              color: "rgba(255,255,255,0.3)", fontSize: "0.9rem", padding: 0,
-              lineHeight: 1,
-            }}
-          >
-            ×
-          </button>
-        )}
-      </div>
-
-      {/* Stats bar */}
-      <div style={{
-        display: "flex", gap: "2rem", marginBottom: "1.5rem",
-        paddingBottom: "1.25rem",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-      }}>
-        {[
-          { label: "Total", value: users.length },
-          { label: "Admins", value: users.filter(u => u.role === "admin" || u.role === "super_admin").length },
-          { label: "Verified", value: users.filter(u => u.emailVerified).length },
-          ...(query ? [{ label: "Results", value: filtered.length }] : []),
-        ].map(stat => (
-          <div key={stat.label}>
-            <p style={{
-              fontFamily: "'Syncopate', sans-serif",
-              fontSize: "1rem", fontWeight: 700,
-              color: "#FF5F1F",
-              lineHeight: 1,
-              marginBottom: "0.3rem",
-            }}>
-              {stat.value}
-            </p>
-            <p style={{
-              fontFamily: "'Syncopate', sans-serif",
-              fontSize: "0.42rem", letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.3)",
-            }}>
-              {stat.label}
-            </p>
+    <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}
+      style={{ position:"relative", background:hovered?D.panel:D.panelB, border:`1px solid ${hovered?accent.border:D.border}`, padding:"1.5rem", transition:"all 0.25s ease", overflow:"hidden", cursor:"default", transform:hovered?"translateY(-2px)":"translateY(0)", boxShadow:hovered?`0 8px 32px ${accent.primary}18`:"none" }}>
+      <div style={{ position:"absolute",top:0,right:0,width:"40px",height:"40px",background:`linear-gradient(225deg,${accent.primary}22 0%,transparent 60%)`,opacity:hovered?1:0.4,transition:"opacity 0.25s" }} />
+      <div style={{ position:"absolute",top:0,left:0,right:0,height:"2px",background:`linear-gradient(90deg,${accent.primary}00,${accent.primary},${accent.primary}00)`,opacity:hovered?1:0,transition:"opacity 0.25s" }} />
+      <div style={{ position:"relative",zIndex:1 }}>
+        <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"1.25rem" }}>
+          <div style={{ position:"relative" }}>
+            <div style={{ width:"52px",height:"52px",background:accent.secondary,border:`1px solid ${accent.border}`,display:"flex",alignItems:"center",justifyContent:"center" }}>
+              <span style={{ fontFamily:D.font,fontSize:"0.85rem",fontWeight:700,color:accent.primary,letterSpacing:"0.05em" }}>{initials}</span>
+            </div>
+            <div style={{ position:"absolute",bottom:"-3px",right:"-3px",width:"12px",height:"12px",background:user.emailVerified?"#00FFAA":"rgba(255,80,80,0.7)",border:`2px solid ${D.panelB}`,borderRadius:"50%" }} />
           </div>
-        ))}
-      </div>
-
-      {/* Table */}
-      <div style={{
-        background: "#111118",
-        border: "1px solid rgba(255,255,255,0.07)",
-        borderRadius: "4px",
-        overflow: "hidden",
-      }}>
-        <table style={S.table}>
-          <thead style={S.thead}>
-            <tr>
-              <th style={S.th}>Name</th>
-              <th style={S.th}>ID</th>
-              <th style={S.th}>Email</th>
-              <th style={S.th}>Role</th>
-              <th style={S.th}>Verified</th>
-              <th style={S.th}>Joined</th>
-              {isSuperAdmin && <th style={S.th}>Actions</th>}
-              <th style={S.th}>View</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={isSuperAdmin ? 8 : 7} style={S.emptyRow}>
-                  No users match "{query}"
-                </td>
-              </tr>
-            ) : (
-              filtered.map((user) => (
-                <UserRow
-                  key={user.id}
-                  user={user}
-                  isSuperAdmin={isSuperAdmin}
-                  onPromote={promoteUser}
-                  onSuspend={suspendUser}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
+          <div style={{ display:"flex",alignItems:"center",gap:"0.35rem",padding:"0.2rem 0.55rem",background:accent.secondary,border:`1px solid ${accent.border}` }}>
+            {user.role==="super_admin"?<Crown size={9} style={{color:accent.primary}} />:isElevated?<Shield size={9} style={{color:accent.primary}} />:<User size={9} style={{color:accent.primary}} />}
+            <span style={{ fontFamily:D.font,fontSize:"0.38rem",letterSpacing:"0.15em",textTransform:"uppercase" as const,color:accent.primary }}>{user.role.replace("_"," ")}</span>
+          </div>
+        </div>
+        <p style={{ fontFamily:D.font,fontSize:"0.72rem",fontWeight:700,color:D.text,letterSpacing:"0.08em",marginBottom:"0.35rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{user.name}</p>
+        <p style={{ fontFamily:D.mono,fontSize:"0.7rem",color:D.dim,marginBottom:"1.25rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{user.email}</p>
+        <div style={{ height:"1px",background:`linear-gradient(90deg,${accent.primary}30,transparent)`,marginBottom:"1rem" }} />
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"1.25rem" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:"0.4rem" }}>
+            {user.emailVerified?<CheckCircle2 size={11} style={{color:D.green,opacity:0.8}} />:<Clock size={11} style={{color:D.red}} />}
+            <span style={{ fontFamily:D.font,fontSize:"0.37rem",letterSpacing:"0.12em",textTransform:"uppercase" as const,color:user.emailVerified?D.green:D.red }}>{user.emailVerified?"Verified":"Pending"}</span>
+          </div>
+          <span style={{ fontFamily:D.mono,fontSize:"0.65rem",color:D.dim }}>{joinDate}</span>
+        </div>
+        <p style={{ fontFamily:D.mono,fontSize:"0.6rem",color:`${accent.primary}55`,letterSpacing:"0.05em",marginBottom:"1rem" }}>#{user.id.slice(0,12).toUpperCase()}</p>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+          <div style={{ display:"flex",gap:"0.5rem" }}>
+            {isSuperAdmin&&user.role!=="admin"&&user.role!=="super_admin"&&<ActionBtn onClick={()=>onPromote(user.id,"admin")} label="Promote" color="#FF5F1F" />}
+            {isSuperAdmin&&user.role==="admin"&&<ActionBtn onClick={()=>onPromote(user.id,"user")} label="Demote" color="#FFAA00" />}
+            {isSuperAdmin&&<ActionBtn onClick={()=>onSuspend(user.id)} label="Suspend" color="rgba(255,80,80,0.8)" danger />}
+          </div>
+          <Link href={`/admin/users/${user.id}`}
+            style={{ display:"inline-flex",alignItems:"center",gap:"0.35rem",padding:"0.35rem 0.7rem",background:D.panelB,border:`1px solid ${D.border}`,color:D.dim,fontFamily:D.font,fontSize:"0.38rem",letterSpacing:"0.12em",textTransform:"uppercase" as const,textDecoration:"none",transition:"all 0.15s" }}
+            onMouseEnter={e=>{(e.currentTarget as HTMLAnchorElement).style.color=D.cyan;(e.currentTarget as HTMLAnchorElement).style.borderColor=`${D.cyan}44`;(e.currentTarget as HTMLAnchorElement).style.background=`${D.cyan}08`;}}
+            onMouseLeave={e=>{(e.currentTarget as HTMLAnchorElement).style.color=D.dim;(e.currentTarget as HTMLAnchorElement).style.borderColor=D.border;(e.currentTarget as HTMLAnchorElement).style.background=D.panelB;}}
+          >View <ExternalLink size={9} /></Link>
+        </div>
       </div>
     </div>
   );
 }
 
-function UserRow({
-  user, isSuperAdmin, onPromote, onSuspend
-}: {
-  user: User;
-  isSuperAdmin: boolean;
-  onPromote: (id: string, role: string) => void;
-  onSuspend: (id: string) => void;
-}) {
-  const [hovered, setHovered] = useState(false);
+export default function AdminUsersPage() {
+  const D = useD();
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUserRole, setCurrentUserRole] = useState("");
+  const [query, setQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [filterRole, setFilterRole] = useState<"all"|"admin"|"user">("all");
+
+  useEffect(() => {
+    Promise.all([api.get("/api/admin/users"),api.get("/api/v1/users/me")])
+      .then(([ur,mr])=>{setUsers(ur.data.data);setCurrentUserRole(mr.data.data.role);})
+      .finally(()=>setLoading(false));
+  },[]);
+
+  const promoteUser = async(userId:string,newRole:string)=>{
+    await api.patch(`/api/admin/users/${userId}/role`,{role:newRole});
+    setUsers(prev=>prev.map(u=>u.id===userId?{...u,role:newRole}:u));
+  };
+  const suspendUser = async(userId:string)=>{
+    if(!confirm("Suspend this user?"))return;
+    await api.delete(`/api/admin/users/${userId}`);
+    setUsers(prev=>prev.filter(u=>u.id!==userId));
+  };
+
+  const filtered = useMemo(()=>{
+    let list=users;
+    if(filterRole!=="all") list=list.filter(u=>filterRole==="admin"?(u.role==="admin"||u.role==="super_admin"):u.role==="user");
+    const q=query.trim().toLowerCase();
+    if(q) list=list.filter(u=>u.name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q)||u.id.toLowerCase().includes(q));
+    return list;
+  },[users,query,filterRole]);
+
+  const isSuperAdmin = currentUserRole==="super_admin";
+  const adminsCount  = users.filter(u=>u.role==="admin"||u.role==="super_admin").length;
+  const verifiedCount = users.filter(u=>u.emailVerified).length;
+
+  if(loading) return (
+    <div style={{ minHeight:"100vh",background:D.bg,display:"flex",alignItems:"center",justifyContent:"center" }}>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ width:"28px",height:"28px",border:`1px solid ${D.orange}`,borderTopColor:"transparent",borderRadius:"50%",margin:"0 auto 1rem",animation:"spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <p style={{ fontFamily:D.font,fontSize:"0.45rem",letterSpacing:"0.3em",color:D.dim,textTransform:"uppercase" }}>Loading users</p>
+      </div>
+    </div>
+  );
 
   return (
-    <tr
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: hovered ? "rgba(255,255,255,0.025)" : "transparent",
-        transition: "background 0.15s",
-      }}
-    >
-      <td style={S.nameCell}>{user.name}</td>
-      <td style={S.idCell}>{user.id.slice(0, 8)}…</td>
-      <td style={S.td}>{user.email}</td>
-      <td style={{ ...S.td, padding: "0.95rem 1rem" }}>
-        <RoleBadge role={user.role} />
-      </td>
-      <td style={{ ...S.td, color: user.emailVerified ? "#00FFAA" : "rgba(255,80,80,0.7)" }}>
-        {user.emailVerified ? "● verified" : "○ pending"}
-      </td>
-      <td style={{ ...S.td, color: "rgba(255,255,255,0.35)", fontSize: "0.72rem" }}>
-        {new Date(user.createdAt).toLocaleDateString("en-GB", {
-          day: "2-digit", month: "short", year: "numeric"
-        })}
-      </td>
-      {isSuperAdmin && (
-        <td style={{ ...S.td, padding: "0.95rem 1rem" }}>
-          <div style={{ display: "flex", gap: "0.1rem" }}>
-            {user.role !== "admin" && user.role !== "super_admin" && (
-              <ActionBtn onClick={() => onPromote(user.id, "admin")} title="Promote to admin" color="#FF5F1F">
-                <Shield size={14} />
-              </ActionBtn>
-            )}
-            {user.role === "admin" && (
-              <ActionBtn onClick={() => onPromote(user.id, "user")} title="Demote to user" color="#FF5F1F">
-                <ShieldOff size={14} />
-              </ActionBtn>
-            )}
-            <ActionBtn onClick={() => onSuspend(user.id)} title="Suspend user" color="rgba(255,80,80,0.9)">
-              <UserMinus size={14} />
-            </ActionBtn>
+    <div style={{ minHeight:"100vh",background:D.bg,color:D.text,padding:0 }}>
+      <div style={{ marginBottom:"2.5rem" }}>
+        <div style={{ display:"flex",alignItems:"center",gap:"0.75rem",marginBottom:"0.5rem" }}>
+          <div style={{ width:"24px",height:"1px",background:D.orange }} />
+          <p style={{ fontFamily:D.font,fontSize:"0.38rem",letterSpacing:"0.35em",textTransform:"uppercase" as const,color:D.orange,opacity:0.7 }}>Admin · Access Control</p>
+        </div>
+        <h1 style={{ fontFamily:D.font,fontSize:"1.3rem",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase" as const,color:D.text,marginBottom:"0.3rem" }}>User Management</h1>
+        <p style={{ fontFamily:D.font,fontSize:"0.42rem",letterSpacing:"0.18em",textTransform:"uppercase" as const,color:D.dim }}>{users.length} registered accounts</p>
+      </div>
+
+      <div style={{ display:"flex",gap:0,marginBottom:"2rem",border:`1px solid ${D.border}` }}>
+        {[{label:"Total",value:users.length,color:D.text},{label:"Admins",value:adminsCount,color:D.orange},{label:"Verified",value:verifiedCount,color:D.green},{label:"Showing",value:filtered.length,color:D.cyan}].map((stat,i)=>(
+          <div key={stat.label} style={{ flex:1,padding:"1rem 1.25rem",borderRight:i<3?`1px solid ${D.border}`:"none",background:D.panelB }}>
+            <p style={{ fontFamily:D.font,fontSize:"1.4rem",fontWeight:700,color:stat.color,lineHeight:1,marginBottom:"0.3rem" }}>{stat.value}</p>
+            <p style={{ fontFamily:D.font,fontSize:"0.38rem",letterSpacing:"0.2em",textTransform:"uppercase" as const,color:D.dim }}>{stat.label}</p>
           </div>
-        </td>
+        ))}
+      </div>
+
+      <div style={{ display:"flex",gap:"1rem",marginBottom:"2rem",alignItems:"center",flexWrap:"wrap" as const }}>
+        <div style={{ display:"flex",alignItems:"center",gap:"0.75rem",background:D.panelB,border:`1px solid ${searchFocused?`${D.orange}66`:D.border}`,padding:"0.65rem 1rem",flex:1,maxWidth:"380px",transition:"border-color 0.2s" }}>
+          <Search size={13} color={searchFocused?D.orange:D.dim} style={{flexShrink:0}} />
+          <input style={{ background:"none",border:"none",outline:"none",color:D.text,fontFamily:D.font,fontSize:"0.48rem",letterSpacing:"0.12em",textTransform:"uppercase" as const,flex:1,minWidth:0 }}
+            placeholder="Search users…" value={query} onChange={e=>setQuery(e.target.value)}
+            onFocus={()=>setSearchFocused(true)} onBlur={()=>setSearchFocused(false)} />
+          {query&&<button onClick={()=>setQuery("")} style={{ background:"none",border:"none",cursor:"pointer",color:D.dim,fontSize:"1rem",padding:0,lineHeight:1 }}>×</button>}
+        </div>
+        <div style={{ display:"flex",gap:0,border:`1px solid ${D.border}` }}>
+          {(["all","admin","user"] as const).map((f,i)=>(
+            <button key={f} onClick={()=>setFilterRole(f)}
+              style={{ background:filterRole===f?"rgba(255,95,31,0.12)":"transparent",border:"none",borderRight:i<2?`1px solid ${D.border}`:"none",cursor:"pointer",padding:"0.55rem 1rem",color:filterRole===f?D.orange:D.dim,fontFamily:D.font,fontSize:"0.4rem",letterSpacing:"0.15em",textTransform:"uppercase" as const,transition:"all 0.15s" }}>
+              {f==="all"?"All":f==="admin"?"Admins":"Users"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filtered.length===0?(
+        <div style={{ padding:"4rem",textAlign:"center",border:`1px solid ${D.border}`,background:D.panelB }}>
+          <p style={{ fontFamily:D.font,fontSize:"0.5rem",letterSpacing:"0.2em",textTransform:"uppercase" as const,color:D.dim }}>No users match your query</p>
+        </div>
+      ):(
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:"1px",background:D.border,border:`1px solid ${D.border}` }}>
+          {filtered.map(user=><UserCard key={user.id} user={user} isSuperAdmin={isSuperAdmin} onPromote={promoteUser} onSuspend={suspendUser} />)}
+        </div>
       )}
-      <td style={{ ...S.td, padding: "0.95rem 1rem" }}>
-        <Link
-          href={`/admin/users/${user.id}`}
-          style={{
-            color: "rgba(255,255,255,0.25)",
-            display: "inline-flex",
-            alignItems: "center",
-            transition: "color 0.15s",
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = "#00FFFF")}
-          onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}
-          title="View user details"
-        >
-          <Eye size={14} />
-        </Link>
-      </td>
-    </tr>
+    </div>
   );
 }

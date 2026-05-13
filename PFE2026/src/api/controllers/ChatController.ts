@@ -1,4 +1,4 @@
-import { JsonController, Post, Body, Res, CurrentUser, UseBefore } from "routing-controllers";
+﻿import { JsonController, Post, Body, Res, CurrentUser, UseBefore } from "routing-controllers";
 import { promptInjectionGuard } from "../middlewares/promptInjectionGuard.js";
 import { Response } from "express";
 import { Service, Inject } from "typedi";
@@ -59,14 +59,20 @@ function isDenial(msg: string): boolean {
 }
 
 
-const SKINCARE_KEYWORDS = /skin|hair|moistur|serum|acne|oily|dry|tone|glow|spf|sunscreen|cleanser|toner|retinol|hyaluronic|niacinamide|vitamin c|exfoliat|pore|wrinkle|aging|redness|concern|routine|product|recommend|cream|lotion|mask|treatment|scalp|shampoo|conditioner/i;
+const SKINCARE_KEYWORDS = /skin|hair|moistur|serum|acne|oily|dry|tone|glow|spf|sunscreen|cleanser|toner|retinol|hyaluronic|niacinamide|vitamin c|exfoliat|pore|wrinkle|aging|redness|concern|routine|product|recommend|cream|lotion|mask|treatment|scalp|shampoo|conditioner|told you|just said|mentioned|my skin|my hair|my concern|what i said|remember|profile|skin type|hair type/i
+const SKINCARE_KEYWORDS_I18N = /sérum|crème|soin|peau|grasse|sèche|cheveux|بشرة|كريم|سيروم|شعر|دهنية|جافة|تقشير|ترطيب/i;
+
+const GREETING_PATTERN = /^\s*(h{1,3}[iy]+|h{1,3}e+l+[o0]+|h{1,3}e+y+|good\s*(morning|afternoon|evening|night|day)|thanks?(\s+you)?|thank\s+you|thx|ty|ok+a?y?|sure|yep+|yeah+|yup|yes+|nope|maybe(\s+later)?|not\s+now|no\s+thanks?|bye+|goodbye|see\s*ya|great|perfect|got\s*it|understood|nice|cool|awesome|sounds?\s*good|alright|noted|wonderful|مرحبا|أهلا|السلام\s*عليكم|مساء\s*الخير|صباح\s*الخير|bonjour|salut|bonsoir|merci|hola|gracias|ciao)(\s+(there|again|mate|friend|lumina|bot|everyone|all))?\W*$/i;
+
+const BOT_META_PATTERN = /^\s*(are\s+you|what\s+are\s+you|who\s+are\s+you|is\s+this\s+(an?\s*)?(ai|bot|chatbot)|you'?re\s+an?\s*(ai|bot)|what\s+is\s+(lumina|this\s+bot))\b/i;
 
 function classifyIntent(
   userMessage: string,
   hadRagResults: boolean,
   fullReply: string,
-): "skincare" | "off_topic" | "no_rag_context" {
-  const isSkincareQ = SKINCARE_KEYWORDS.test(userMessage);
+): "skincare" | "off_topic" | "no_rag_context" | "greeting" {
+  if (GREETING_PATTERN.test(userMessage.trim())) return "greeting";
+  const isSkincareQ = SKINCARE_KEYWORDS.test(userMessage) || SKINCARE_KEYWORDS_I18N.test(userMessage);
   if (!isSkincareQ) return "off_topic";
   if (isSkincareQ && !hadRagResults) return "no_rag_context";
   return "skincare";
@@ -184,6 +190,7 @@ export class ChatController {
       // ── RAG product context (with auth token) ─────────────────────────────
       let productContext = "";
       let hadRagResults  = false;
+      let ragTopScore    = 0;
       try {
         const baseQ    = message.length < 35 && historyMessages.length ? `${historyMessages.at(-2)?.content ?? ""} ${message}` : message;
         const skinHint = [effectiveSkin, effectiveHair, ...effectiveConcerns.slice(0, 2)].filter(Boolean).join(" ");
@@ -191,7 +198,8 @@ export class ChatController {
         const ragRes = await ragClient.search(ragQuery, 6);
         const products = ragRes?.results;
         if (Array.isArray(products) && products.length) {
-          hadRagResults  = true;
+          ragTopScore   = (products[0] as any)?.score ?? 0;
+          hadRagResults = ragTopScore >= 0.35;
           productContext = `\nPERMITTED PRODUCTS (only recommend if asked):\n` +
             products.map((p: any) => `- ${sanitizeForPrompt(p.name)}: ${sanitizeForPrompt(p.description)} (${p.price} TND)`).join("\n");
           if (userId) {
@@ -239,11 +247,20 @@ export class ChatController {
       });
 
       // ── Persist conversation ──────────────────────────────────────────────
-      let logId: string | null = null;
+            let logId: string | null = null;
       if (fullReply && !clientGone) {
+        const intent = classifyIntent(message, hadRagResults, fullReply);
+        const confidence = (() => {
+          if (intent === "greeting")        return 1.0;
+          if (intent === "off_topic")       return 0.25;
+          if (intent === "no_rag_context")  return 0.40;
+          // skincare: use real RAG similarity score if available
+          return ragTopScore >= 0.35 ? Math.min(0.95, 0.5 + ragTopScore * 0.5) : 0.55;
+        })();
         const [inserted] = await db.insert(conversationLogs).values({
           sessionId: sender, userId, userMessage: message,
-          botMessages: [{ text: fullReply }], intent: classifyIntent(message, hadRagResults, fullReply),
+          botMessages: [{ text: fullReply, confidence }],
+          intent,
         }).returning({ id: conversationLogs.id });
         logId = inserted?.id ?? null;
       }

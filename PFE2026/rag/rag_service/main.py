@@ -1,4 +1,4 @@
-import os, ssl, logging, math
+﻿import os, ssl, logging, math
 from dotenv import load_dotenv
 load_dotenv()
 import httpx
@@ -110,17 +110,20 @@ def search(q: str, limit: int = 4, _token: str = Depends(require_service_token))
         results = collection.query(
             query_embeddings=[embed(q)],
             n_results=min(limit, collection.count()),
-            include=["documents", "metadatas"]
+            include=["documents", "metadatas", "distances"]
         )
         output = []
         for i, doc in enumerate(results["documents"][0]):
             meta = results["metadatas"][0][i] if results.get("metadatas") else {}
+            distance = results["distances"][0][i] if results.get("distances") else 1.0
+            score    = round(max(0.0, 1.0 - distance), 4)
             output.append({
                 "name":        meta.get("name", ""),
                 "description": doc,
                 "category":    meta.get("category", ""),
                 "price":       meta.get("price", ""),
                 "id":          meta.get("id", ""),
+                            "score": score,
             })
         return {"results": output}
     except Exception as e:

@@ -34,8 +34,8 @@ export interface ChatHealthMetrics {
 
 @Service()
 export class GetChatHealthUseCase {
-  async execute(): Promise<ChatHealthMetrics> {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  async execute(days: number = 30): Promise<ChatHealthMetrics> {
+    const oneDayAgo = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     const [logs, feedbacks] = await Promise.all([
       db.select().from(conversationLogs)
@@ -49,13 +49,17 @@ export class GetChatHealthUseCase {
     const total = logs.length;
     const feedbackMap = new Map(feedbacks.map(f => [f.logId, f.rating]));
 
-    const avgConfidence = total
-      ? logs.reduce((s, l) => s + ((l.botMessages as any[])?.[0]?.confidence ?? 0.5), 0) / total
+        const logsWithConf = logs.filter(l => (l.botMessages as any[])?.[0]?.confidence != null);
+    const avgConfidence = logsWithConf.length
+      ? logsWithConf.reduce((s, l) => s + ((l.botMessages as any[])[0].confidence as number), 0) / logsWithConf.length
       : 0;
 
+    // Hallucination = bot gave a long reply to an off_topic query (failed to refuse)
+    // Short reply = correct refusal ("I only help with skincare") = NOT a hallucination
     const hallucinationCount = logs.filter(l => {
-      const conf = (l.botMessages as any[])?.[0]?.confidence ?? 0.5;
-      return conf < 0.7 && feedbackMap.get(l.id) === -1;
+      if (l.intent !== "off_topic") return false;
+      const reply = (l.botMessages as any[])?.[0]?.text ?? "";
+      return reply.length > 120;
     }).length;
 
     const posCount = feedbacks.filter(f => f.rating === 1).length;

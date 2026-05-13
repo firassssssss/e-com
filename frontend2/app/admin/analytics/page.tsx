@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
@@ -11,49 +11,41 @@ import {
   ChevronRight, ChevronUp, ChevronDown,
   X, Eye, Search, Heart, MessageSquare, Zap, AlertTriangle, CheckCircle, HelpCircle, Bot, MousePointer,
 } from "lucide-react";
+import { useD } from "@/components/admin/AdminTokensContext";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// -- Types ---------------------------------------------------------------------
 interface ActivityPoint { date: string; views: number; searches: number; carts: number; wishlists: number; }
 interface KPI { totalUsers: number; totalOrders: number; totalRevenue: number; activeUsers7d: number; }
 interface UserSummary { id: string; name: string | null; email: string | null; views: number; searches: number; carts: number; wishlists: number; total: number; last_active: string | null; }
 interface UserDetail { views: number; searches: number; carts: number; wishlists: number; recentSignals: { id: string; type: string; productId?: string; searchQuery?: string; weight: number; createdAt: string; }[]; }
 interface QualitySummaryRow { intent: string; count: number; first_seen: string; last_seen: string; }
 interface QualitySample { id: string; message: string; userId: string | null; createdAt: string; }
-interface ChatQuality { summary: QualitySummaryRow[]; offTopicSample: QualitySample[]; noRagSample: QualitySample[]; }
+interface ChatQuality { summary: QualitySummaryRow[]; offTopicSample: QualitySample[]; noRagSample: QualitySample[]; orderGapSample: QualitySample[]; langBreakdown: { arabic: number; french: number; english: number; other: number } | null; }
+interface RagHealth { status: string; vectors: number; ml_classifier: string; }
 interface SignalBreakdownRow { type: string; count: number; unique_users: number; }
 interface SignalTrendRow { date: string; type: string; count: number; }
 interface SignalsBreakdown { breakdown: SignalBreakdownRow[]; trend: SignalTrendRow[]; }
 type SortKey = "total" | "views" | "searches" | "carts" | "wishlists";
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const D = {
-  bg: "#0A0A0F", panel: "#111118", panelB: "#16161f",
-  border: "rgba(255,255,255,0.07)", text: "#fff",
-  muted: "rgba(255,255,255,0.5)", dim: "rgba(255,255,255,0.22)",
-  orange: "#FF5F1F", cyan: "#00FFFF", purple: "#9B59FF", green: "#00FFAA",
-  yellow: "#FFD700", red: "#FF4444",
-  font: "'Syncopate', sans-serif", mono: "monospace",
-};
+// -- Design tokens -------------------------------------------------------------
+
 const PALETTE: Record<string, string> = {
   views: "#FF5F1F", searches: "#00FFFF", carts: "#9B59FF", wishlists: "#00FFAA", chat_rag: "#FFD700",
 };
 const PIE_COLORS = ["#FF5F1F", "#00FFFF", "#9B59FF", "#00FFAA", "#FFD700"];
 const INTENT_COLORS: Record<string, string> = {
-  skincare: "#00FFAA", no_rag_context: "#FFD700", off_topic: "#FF4444", unknown: "rgba(255,255,255,0.3)",
-};
-const CHART_TOOLTIP = {
-  contentStyle: { background: "#16161f", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4, fontSize: 11, color: "#fff" },
-  labelStyle: { color: "rgba(255,255,255,0.6)", fontWeight: 500 },
+  skincare: "#00FFAA", no_rag_context: "#FFD700", off_topic: "#FF4444", greeting: "#7B8CDE", unknown: "rgba(255,255,255,0.3)",
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// -- Helpers -------------------------------------------------------------------
 function fmt(n: number) { return n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n/1_000).toFixed(1)}k` : String(n); }
 function fmtCurrency(n: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n); }
 function fmtDate(s: string | null) { if (!s) return "—"; return new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
 function fmtDateTime(s: string) { return new Date(s).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// -- Sub-components ------------------------------------------------------------
 function KPICard({ label, value, icon: Icon, sub, accent = false, loading = false }: { label: string; value: string; icon: React.ComponentType<any>; sub: string; accent?: boolean; loading?: boolean; }) {
+  const D = useD();
   return (
     <div style={{ background: D.panel, border: `1px solid ${accent ? "rgba(255,95,31,0.3)" : D.border}`, borderRadius: 4, padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -76,6 +68,7 @@ function SortBtn({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
 }
 
 function SignalIcon({ type }: { type: string }) {
+  const D = useD();
   const map: Record<string, JSX.Element> = {
     view:     <Eye size={11} color={PALETTE.views} />,
     search:   <Search size={11} color={PALETTE.searches} />,
@@ -86,14 +79,21 @@ function SignalIcon({ type }: { type: string }) {
   return map[type] ?? <Zap size={11} color={D.dim} />;
 }
 
-// ── Rec Intelligence Tab ──────────────────────────────────────────────────────
-function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
+// -- Rec Intelligence Tab ------------------------------------------------------
+function RecIntelligenceTab({ quality, signals, loadingQ, loadingS, ragHealth }: {
   quality: ChatQuality | null;
   signals: SignalsBreakdown | null;
   loadingQ: boolean;
   loadingS: boolean;
+  ragHealth: RagHealth | null;
 }) {
-  const [sampleTab, setSampleTab] = useState<"off_topic" | "no_rag">("off_topic");
+  const D = useD();
+  const [sampleTab, setSampleTab] = useState<"off_topic" | "no_rag" | "order_gap">("off_topic");
+
+  const CHART_TOOLTIP = {
+    contentStyle: { background: D.panelB, border: `1px solid ${D.border}`, borderRadius: 4, fontSize: 11, color: D.text },
+    labelStyle: { color: D.muted, fontWeight: 500 },
+  };
 
   // Intent pie data
   const intentPie = quality?.summary.map(r => ({
@@ -102,7 +102,7 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
     color: INTENT_COLORS[r.intent] ?? D.dim,
   })) ?? [];
 
-  const totalIntents = intentPie.reduce((s, r) => s + r.value, 0) || 1;
+  const totalIntents = intentPie.filter(r => r.name !== "unknown" && r.name !== "greeting").reduce((s, r) => s + r.value, 0) || 1;
   const skincareCount    = quality?.summary.find(r => r.intent === "skincare")?.count ?? 0;
   const offTopicCount    = quality?.summary.find(r => r.intent === "off_topic")?.count ?? 0;
   const noRagCount       = quality?.summary.find(r => r.intent === "no_rag_context")?.count ?? 0;
@@ -136,15 +136,15 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
-      {/* ── Top KPIs ── */}
+      {/* -- Top KPIs -- */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "0.75rem" }}>
-        {stat("Chatbot Health Score", loadingQ ? "—" : `${healthScore}%`, healthScore >= 70 ? D.green : healthScore >= 40 ? D.yellow : D.red, "% of messages resolved with skincare context")}
-        {stat("Off-Topic Messages", loadingQ ? "—" : fmt(offTopicCount), D.red, "Hallucination / out-of-scope replies")}
-        {stat("No RAG Context", loadingQ ? "—" : fmt(noRagCount), D.yellow, "Skincare Q but zero product matches")}
-        {stat("Chat→Rec Signals", loadingS ? "—" : fmt(chatRagTotal), D.yellow, `${chatRagPct}% of all recommendation signals`)}
+        {stat("Chatbot Health Score", loadingQ ? "…" : `${healthScore}%`, healthScore >= 70 ? D.green : healthScore >= 40 ? D.yellow : D.red, "% of messages resolved with skincare context")}
+        {stat("Off-Topic Messages", loadingQ ? "…" : fmt(offTopicCount), D.red, "Out-of-scope refusals (correctly handled)")}
+        {stat("No RAG Context", loadingQ ? "…" : fmt(noRagCount), D.yellow, "Skincare Q but zero product matches")}
+        {stat("Chat→Rec Signals", loadingS ? "…" : fmt(chatRagTotal), D.yellow, `${chatRagPct}% of all recommendation signals`)}
       </div>
 
-      {/* ── Bidirectional flow ── */}
+      {/* -- Bidirectional flow -- */}
       <div style={{ background: D.panel, border: `1px solid ${D.border}`, borderRadius: 4, padding: "1.5rem" }}>
         <p style={{ fontFamily: D.font, fontSize: "0.55rem", letterSpacing: "0.15em", color: D.text, marginBottom: 4 }}>Bidirectional Recommendation Flow</p>
         <p style={{ fontFamily: D.font, fontSize: "0.42rem", letterSpacing: "0.12em", color: D.dim, marginBottom: "1.5rem" }}>How chatbot conversations and UI interactions each feed the recommendation engine</p>
@@ -155,7 +155,7 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
             <div style={{ background: "rgba(255,215,0,0.08)", border: `1px solid rgba(255,215,0,0.3)`, borderRadius: 8, padding: "1.25rem", marginBottom: "0.75rem" }}>
               <Bot size={28} color={D.yellow} style={{ marginBottom: "0.5rem" }} />
               <p style={{ fontFamily: D.font, fontSize: "0.48rem", letterSpacing: "0.15em", color: D.yellow }}>Chatbot</p>
-              <p style={{ fontFamily: D.mono, fontSize: "1.2rem", fontWeight: 700, color: D.text, marginTop: "0.5rem" }}>{loadingS ? "—" : fmt(chatRagTotal)}</p>
+              <p style={{ fontFamily: D.mono, fontSize: "1.2rem", fontWeight: 700, color: D.text, marginTop: "0.5rem" }}>{loadingS ? "…" : fmt(chatRagTotal)}</p>
               <p style={{ fontFamily: D.font, fontSize: "0.38rem", letterSpacing: "0.1em", color: D.dim }}>chat_rag signals</p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
@@ -173,7 +173,7 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
             <div style={{ background: "rgba(255,95,31,0.1)", border: `1px solid rgba(255,95,31,0.3)`, borderRadius: 6, padding: "0.75rem 1rem", textAlign: "center" }}>
               <Zap size={18} color={D.orange} style={{ marginBottom: "0.35rem" }} />
               <p style={{ fontFamily: D.font, fontSize: "0.42rem", letterSpacing: "0.12em", color: D.orange }}>Rec Engine</p>
-              <p style={{ fontFamily: D.mono, fontSize: "0.9rem", fontWeight: 700, color: D.text, marginTop: "0.35rem" }}>{loadingS ? "—" : fmt(grandTotal)}</p>
+              <p style={{ fontFamily: D.mono, fontSize: "0.9rem", fontWeight: 700, color: D.text, marginTop: "0.35rem" }}>{loadingS ? "…" : fmt(grandTotal)}</p>
               <p style={{ fontFamily: D.font, fontSize: "0.36rem", letterSpacing: "0.1em", color: D.dim }}>total signals</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
@@ -187,7 +187,7 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
             <div style={{ background: "rgba(0,255,255,0.05)", border: `1px solid rgba(0,255,255,0.2)`, borderRadius: 8, padding: "1.25rem", marginBottom: "0.75rem" }}>
               <MousePointer size={28} color={D.cyan} style={{ marginBottom: "0.5rem" }} />
               <p style={{ fontFamily: D.font, fontSize: "0.48rem", letterSpacing: "0.15em", color: D.cyan }}>UI Actions</p>
-              <p style={{ fontFamily: D.mono, fontSize: "1.2rem", fontWeight: 700, color: D.text, marginTop: "0.5rem" }}>{loadingS ? "—" : fmt(uiTotal)}</p>
+              <p style={{ fontFamily: D.mono, fontSize: "1.2rem", fontWeight: 700, color: D.text, marginTop: "0.5rem" }}>{loadingS ? "…" : fmt(uiTotal)}</p>
               <p style={{ fontFamily: D.font, fontSize: "0.38rem", letterSpacing: "0.1em", color: D.dim }}>view / search / cart / wishlist</p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
@@ -205,7 +205,7 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
           ].map(({ label, pct, count, color }) => (
             <div key={label} style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <span style={{ fontFamily: D.font, fontSize: "0.4rem", letterSpacing: "0.12em", color: D.dim, width: 130 }}>{label}</span>
-              <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
+              <div style={{ flex: 1, height: 6, background: D.border, borderRadius: 3, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 3, transition: "width 0.6s" }} />
               </div>
               <span style={{ fontFamily: D.mono, fontSize: "0.8rem", color: D.text, width: 40, textAlign: "right" }}>{fmt(count)}</span>
@@ -215,7 +215,51 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
         </div>
       </div>
 
-      {/* ── Charts row ── */}
+      {/* -- RAG Health + Language Breakdown -- */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div style={{ background: D.panel, border: `1px solid ${ragHealth?.status === "ok" ? "rgba(0,255,170,0.3)" : "rgba(255,68,68,0.3)"}`, borderRadius: 4, padding: "1.5rem" }}>
+          <p style={{ fontFamily: D.font, fontSize: "0.55rem", letterSpacing: "0.15em", color: D.text, marginBottom: 4 }}>RAG Service Health</p>
+          <p style={{ fontFamily: D.font, fontSize: "0.42rem", letterSpacing: "0.12em", color: D.dim, marginBottom: "1rem" }}>Vector store status and indexed product count</p>
+          <div style={{ display: "flex", gap: "1rem" }}>
+            {[
+              { label: "STATUS", value: ragHealth?.status ?? "—", color: ragHealth?.status === "ok" ? D.green : D.red },
+              { label: "VECTORS", value: ragHealth ? String(ragHealth.vectors) : "—", color: D.text },
+              { label: "ML CLASSIFIER", value: ragHealth?.ml_classifier ?? "—", color: ragHealth?.ml_classifier === "ready" ? D.green : D.yellow },
+            ].map(({ label, value, color }) => (
+              <div key={label} style={{ flex: 1, background: D.panelB, border: `1px solid ${D.border}`, borderRadius: 4, padding: "1rem" }}>
+                <p style={{ fontFamily: D.font, fontSize: "0.38rem", letterSpacing: "0.15em", color: D.dim, marginBottom: "0.5rem" }}>{label}</p>
+                <p style={{ fontFamily: D.mono, fontSize: "1.1rem", fontWeight: 700, color, textTransform: "uppercase" }}>{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ background: D.panel, border: `1px solid ${D.border}`, borderRadius: 4, padding: "1.5rem" }}>
+          <p style={{ fontFamily: D.font, fontSize: "0.55rem", letterSpacing: "0.15em", color: D.text, marginBottom: 4 }}>User Language Breakdown</p>
+          <p style={{ fontFamily: D.font, fontSize: "0.42rem", letterSpacing: "0.12em", color: D.dim, marginBottom: "1rem" }}>Languages detected in chat messages</p>
+          {loadingQ ? <div style={{ color: D.dim }}>Loading…</div> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              {quality?.langBreakdown && Object.entries(quality.langBreakdown).map(([lang, count]) => {
+                const total = Object.values(quality.langBreakdown!).reduce((a, b) => a + b, 0) || 1;
+                const pct = Math.round((count / total) * 100);
+                const color = lang === "arabic" ? "#FFD700" : lang === "french" ? "#00FFAA" : lang === "english" ? "#00FFFF" : D.dim;
+                return (
+                  <div key={lang} style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ fontFamily: D.font, fontSize: "0.4rem", letterSpacing: "0.12em", color: D.dim, width: 60, textTransform: "capitalize" }}>{lang}</span>
+                    <div style={{ flex: 1, height: 5, background: D.border, borderRadius: 3, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 3 }} />
+                    </div>
+                    <span style={{ fontFamily: D.mono, fontSize: "0.75rem", color: D.text, width: 32, textAlign: "right" }}>{count}</span>
+                    <span style={{ fontFamily: D.mono, fontSize: "0.68rem", color: D.dim, width: 32, textAlign: "right" }}>{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* -- Charts row -- */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
 
         {/* Intent pie */}
@@ -283,9 +327,9 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
                     <stop offset="95%" stopColor={D.cyan} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" tick={{ fontSize: 10, fill: D.dim }} />
-                <YAxis stroke="rgba(255,255,255,0.2)" tick={{ fontSize: 10, fill: D.dim }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={D.border} />
+                <XAxis dataKey="date" stroke={D.dim} tick={{ fontSize: 10, fill: D.dim }} />
+                <YAxis stroke={D.dim} tick={{ fontSize: 10, fill: D.dim }} />
                 <Tooltip {...CHART_TOOLTIP} />
                 <Legend wrapperStyle={{ fontSize: 11, color: D.dim }} />
                 <Area type="monotone" dataKey="chatbot" stroke={D.yellow} strokeWidth={1.5} fill="url(#gc)" dot={false} name="Chatbot" />
@@ -296,7 +340,7 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
         </div>
       </div>
 
-      {/* ── All signal types breakdown ── */}
+      {/* -- All signal types breakdown -- */}
       {signals && signals.breakdown.length > 0 && (
         <div style={{ background: D.panel, border: `1px solid ${D.border}`, borderRadius: 4, padding: "1.5rem" }}>
           <p style={{ fontFamily: D.font, fontSize: "0.55rem", letterSpacing: "0.15em", color: D.text, marginBottom: 4 }}>All Signal Types</p>
@@ -320,7 +364,7 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
         </div>
       )}
 
-      {/* ── Problem messages ── */}
+      {/* -- Problem messages -- */}
       <div style={{ background: D.panel, border: `1px solid ${D.border}`, borderRadius: 4, overflow: "hidden" }}>
         <div style={{ padding: "1.25rem 1.5rem", borderBottom: `1px solid ${D.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
@@ -328,7 +372,11 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
             <p style={{ fontFamily: D.font, fontSize: "0.42rem", letterSpacing: "0.12em", color: D.dim, marginTop: 4 }}>Recent messages that triggered quality flags</p>
           </div>
           <div style={{ display: "flex", gap: "0.35rem" }}>
-            {([["off_topic", "Off-Topic", D.red], ["no_rag", "No RAG Match", D.yellow]] as const).map(([key, label, color]) => (
+            {([
+              ["off_topic",   "Off-Topic",       D.red,    offTopicCount],
+              ["no_rag",      "No RAG Match",    D.yellow, noRagCount],
+              ["order_gap",   "Order Requests",  D.cyan,   quality?.orderGapSample?.length ?? 0],
+            ] as const).map(([key, label, color, count]) => (
               <button
                 key={key}
                 onClick={() => setSampleTab(key)}
@@ -342,8 +390,8 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
                   display: "flex", alignItems: "center", gap: "0.4rem",
                 }}
               >
-                {key === "off_topic" ? <AlertTriangle size={10} /> : <HelpCircle size={10} />}
-                {label} ({key === "off_topic" ? offTopicCount : noRagCount})
+                {key === "off_topic" ? <AlertTriangle size={10} /> : key === "no_rag" ? <HelpCircle size={10} /> : <ShoppingBag size={10} />}
+                {label} ({count})
               </button>
             ))}
           </div>
@@ -353,20 +401,22 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
             <div style={{ padding: "2rem", textAlign: "center" }}>
               <span style={{ fontFamily: D.font, fontSize: "0.42rem", color: D.dim }}>Loading…</span>
             </div>
-          ) : (sampleTab === "off_topic" ? quality?.offTopicSample : quality?.noRagSample)?.length === 0 ? (
+          ) : (sampleTab === "off_topic" ? quality?.offTopicSample : sampleTab === "no_rag" ? quality?.noRagSample : quality?.orderGapSample)?.length === 0 ? (
             <div style={{ padding: "2.5rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
               <CheckCircle size={22} color={D.green} />
               <p style={{ fontFamily: D.font, fontSize: "0.45rem", letterSpacing: "0.15em", color: D.green }}>
-                {sampleTab === "off_topic" ? "No off-topic messages" : "No unmatched skincare queries"}
+                {sampleTab === "off_topic" ? "No off-topic messages" : sampleTab === "no_rag" ? "No unmatched skincare queries" : "No order-related requests"}
               </p>
             </div>
           ) : (
-            (sampleTab === "off_topic" ? quality?.offTopicSample : quality?.noRagSample)?.map(s => (
+            (sampleTab === "off_topic" ? quality?.offTopicSample : sampleTab === "no_rag" ? quality?.noRagSample : quality?.orderGapSample)?.map(s => (
               <div key={s.id} style={{ padding: "0.85rem 1.5rem", borderBottom: `1px solid ${D.border}`, display: "flex", alignItems: "flex-start", gap: "1rem" }}>
                 <div style={{ flexShrink: 0, marginTop: 2 }}>
                   {sampleTab === "off_topic"
                     ? <AlertTriangle size={13} color={D.red} />
-                    : <HelpCircle size={13} color={D.yellow} />}
+                    : sampleTab === "no_rag"
+                    ? <HelpCircle size={13} color={D.yellow} />
+                    : <ShoppingBag size={13} color={D.cyan} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontFamily: D.mono, fontSize: "0.82rem", color: D.text, marginBottom: "0.3rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -386,9 +436,14 @@ function RecIntelligenceTab({ quality, signals, loadingQ, loadingS }: {
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// -- Main Page -----------------------------------------------------------------
 export default function AdminAnalyticsPage() {
-  const [period, setPeriod] = useState<"day" | "week" | "month">("week");
+  const D = useD();
+  const CHART_TOOLTIP = {
+    contentStyle: { background: D.panelB, border: `1px solid ${D.border}`, borderRadius: 4, fontSize: 11, color: D.text },
+    labelStyle: { color: D.muted, fontWeight: 500 },
+  };
+  const [period, setPeriod] = useState<"day" | "week" | "month">("month");
   const [tab, setTab]       = useState<"overview" | "users" | "rec_intel">("overview");
 
   const [activity, setActivity] = useState<ActivityPoint[]>([]);
@@ -396,13 +451,14 @@ export default function AdminAnalyticsPage() {
   const [users, setUsers]       = useState<UserSummary[]>([]);
   const [quality, setQuality]   = useState<ChatQuality | null>(null);
   const [signals, setSignals]   = useState<SignalsBreakdown | null>(null);
+  const [ragHealth, setRagHealth] = useState<RagHealth | null>(null);
 
   const [selectedUser, setSelectedUser] = useState<UserSummary | null>(null);
   const [userDetail, setUserDetail]     = useState<UserDetail | null>(null);
   const [search, setSearch]             = useState("");
   const [sort, setSort]                 = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "total", dir: "desc" });
 
-  const [loadingKpi, setLoadingKpi]         = useState(true);
+  const [loadingKpi, setLoadingKpi]           = useState(true);
   const [loadingActivity, setLoadingActivity] = useState(true);
   const [loadingUsers, setLoadingUsers]       = useState(true);
   const [loadingDetail, setLoadingDetail]     = useState(false);
@@ -430,11 +486,12 @@ export default function AdminAnalyticsPage() {
     setLoadingQ(true);
     api.get(`/api/admin/chat/quality?days=${period === "day" ? 1 : period === "week" ? 7 : 30}`)
       .then(r => setQuality(r.data.data)).finally(() => setLoadingQ(false));
+    api.get("/api/admin/rag/health").then(r => setRagHealth(r.data.data)).catch(() => {});
   }, [period]);
 
   useEffect(() => {
     setLoadingS(true);
-    api.get(`/api/admin/analytics/signals/breakdown?days=${period === "day" ? 1 : period === "week" ? 7 : 30}`)
+    api.get(`/api/admin/analytics/signals/breakdown?days=30`)
       .then(r => setSignals(r.data.data)).finally(() => setLoadingS(false));
   }, [period]);
 
@@ -461,7 +518,7 @@ export default function AdminAnalyticsPage() {
   return (
     <div style={{ minHeight: "100vh", background: D.bg, color: D.text }}>
       {/* Top bar */}
-      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "#0d0d14", borderBottom: `1px solid ${D.border}`, padding: "1rem 0", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 20, background: D.panelB, borderBottom: `1px solid ${D.border}`, padding: "1rem 0", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
         <div>
           <p style={{ fontFamily: D.font, fontSize: "0.85rem", letterSpacing: "0.22em", fontWeight: 700, color: D.text }}>Analytics</p>
           <p style={{ fontFamily: D.font, fontSize: "0.42rem", letterSpacing: "0.15em", color: D.dim, marginTop: 4 }}>Real-time ecommerce intelligence</p>
@@ -476,10 +533,10 @@ export default function AdminAnalyticsPage() {
       <div style={{ maxWidth: 1400 }}>
         {/* KPI cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "0.75rem", marginBottom: "1.5rem" }}>
-          <KPICard label="Total Users"     value={kpi?fmt(kpi.totalUsers):"—"}          icon={Users}       sub="Registered accounts"          loading={loadingKpi} />
-          <KPICard label="Active (7 days)" value={kpi?fmt(kpi.activeUsers7d):"—"}       icon={UserCheck}   sub="Users with recorded signals"   loading={loadingKpi} accent />
-          <KPICard label="Total Orders"    value={kpi?fmt(kpi.totalOrders):"—"}         icon={ShoppingBag} sub="All-time orders placed"        loading={loadingKpi} />
-          <KPICard label="Gross Revenue"   value={kpi?fmtCurrency(kpi.totalRevenue):"—"} icon={DollarSign}  sub="Sum of all orders"            loading={loadingKpi} />
+          <KPICard label="Total Users"     value={kpi?fmt(kpi.totalUsers):"—"}           icon={Users}       sub="Registered accounts"         loading={loadingKpi} />
+          <KPICard label="Active (7 days)" value={kpi?fmt(kpi.activeUsers7d):"—"}        icon={UserCheck}   sub="Users with recorded signals"  loading={loadingKpi} accent />
+          <KPICard label="Total Orders"    value={kpi?fmt(kpi.totalOrders):"—"}          icon={ShoppingBag} sub="All-time orders placed"       loading={loadingKpi} />
+          <KPICard label="Gross Revenue"   value={kpi?fmtCurrency(kpi.totalRevenue):"—"} icon={DollarSign}  sub="Sum of all orders"           loading={loadingKpi} />
         </div>
 
         {/* Tabs */}
@@ -514,9 +571,9 @@ export default function AdminAnalyticsPage() {
                   <ResponsiveContainer width="100%" height={260}>
                     <AreaChart data={activity}>
                       <defs>{Object.entries(PALETTE).slice(0,4).map(([k,c]) => <linearGradient key={k} id={`g-${k}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={c} stopOpacity={0.25}/><stop offset="95%" stopColor={c} stopOpacity={0}/></linearGradient>)}</defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" tick={{ fontSize: 10, fill: D.dim }} />
-                      <YAxis stroke="rgba(255,255,255,0.2)" tick={{ fontSize: 10, fill: D.dim }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={D.border} />
+                      <XAxis dataKey="date" stroke={D.dim} tick={{ fontSize: 10, fill: D.dim }} />
+                      <YAxis stroke={D.dim} tick={{ fontSize: 10, fill: D.dim }} />
                       <Tooltip {...CHART_TOOLTIP} /><Legend wrapperStyle={{ fontSize: 11, color: D.dim }} />
                       {Object.entries(PALETTE).slice(0,4).map(([k,c]) => <Area key={k} type="monotone" dataKey={k} stroke={c} strokeWidth={1.5} fill={`url(#g-${k})`} dot={false} />)}
                     </AreaChart>
@@ -554,9 +611,9 @@ export default function AdminAnalyticsPage() {
                 <p style={{ fontFamily: D.font, fontSize: "0.42rem", letterSpacing: "0.12em", color: D.dim, marginBottom: "1.25rem" }}>All signal types stacked per day</p>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={activity} barSize={activity.length>14?12:20}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" tick={{ fontSize: 10, fill: D.dim }} />
-                    <YAxis stroke="rgba(255,255,255,0.2)" tick={{ fontSize: 10, fill: D.dim }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={D.border} vertical={false} />
+                    <XAxis dataKey="date" stroke={D.dim} tick={{ fontSize: 10, fill: D.dim }} />
+                    <YAxis stroke={D.dim} tick={{ fontSize: 10, fill: D.dim }} />
                     <Tooltip {...CHART_TOOLTIP} /><Legend wrapperStyle={{ fontSize: 11, color: D.dim }} />
                     {Object.entries(PALETTE).slice(0,4).map(([k,c]) => <Bar key={k} dataKey={k} stackId="a" fill={c} radius={k==="wishlists"?[3,3,0,0]:undefined} />)}
                   </BarChart>
@@ -605,7 +662,7 @@ export default function AdminAnalyticsPage() {
 
         {/* REC INTELLIGENCE TAB */}
         {tab === "rec_intel" && (
-          <RecIntelligenceTab quality={quality} signals={signals} loadingQ={loadingQ} loadingS={loadingS} />
+          <RecIntelligenceTab quality={quality} signals={signals} loadingQ={loadingQ} loadingS={loadingS} ragHealth={ragHealth} />
         )}
       </div>
 
@@ -643,7 +700,7 @@ export default function AdminAnalyticsPage() {
                       return (
                         <div key={k} style={{ display:"flex",alignItems:"center",gap:"0.75rem" }}>
                           <span style={{ fontFamily:D.font,fontSize:"0.4rem",letterSpacing:"0.12em",color:D.dim,width:64,textTransform:"capitalize" }}>{k}</span>
-                          <div style={{ flex:1,height:4,background:"rgba(255,255,255,0.06)",borderRadius:2,overflow:"hidden" }}>
+                          <div style={{ flex:1,height:4,background:D.border,borderRadius:2,overflow:"hidden" }}>
                             <div style={{ height:"100%",width:`${pct}%`,background:PALETTE[k],borderRadius:2 }} />
                           </div>
                           <span style={{ fontFamily:D.mono,fontSize:"0.75rem",color:D.text,width:36,textAlign:"right" }}>{pct}%</span>
@@ -679,28 +736,29 @@ export default function AdminAnalyticsPage() {
 }
 
 function AnalyticsUserRow({ u, maxByKey, onSelect }: { u: UserSummary; maxByKey: (k: SortKey) => number; onSelect: () => void; }) {
+  const D = useD();
   const [h, setH] = useState(false);
-  const td: React.CSSProperties = { padding: "0.85rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", verticalAlign: "middle" };
+  const td: React.CSSProperties = { padding: "0.85rem 1rem", borderBottom: `1px solid ${D.border}`, color: D.muted, fontSize: "0.8rem", verticalAlign: "middle" };
   return (
-    <tr onClick={onSelect} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ background:h?"rgba(255,255,255,0.025)":"transparent",cursor:"pointer",transition:"background 0.15s" }}>
+    <tr onClick={onSelect} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{ background:h?D.panel:"transparent",cursor:"pointer",transition:"background 0.15s" }}>
       <td style={{ ...td, paddingLeft: "1.25rem" }}>
-        <p style={{ color:"#fff",fontWeight:600,fontSize:"0.82rem",marginBottom:3 }}>{u.name??<span style={{ color:"rgba(255,255,255,0.2)",fontStyle:"italic" }}>No name</span>}</p>
-        <p style={{ fontFamily:"monospace",fontSize:"0.72rem",color:"rgba(255,255,255,0.3)" }}>{u.email}</p>
+        <p style={{ color:D.text,fontWeight:600,fontSize:"0.82rem",marginBottom:3 }}>{u.name??<span style={{ color:D.dim,fontStyle:"italic" }}>No name</span>}</p>
+        <p style={{ fontFamily:"monospace",fontSize:"0.72rem",color:D.dim }}>{u.email}</p>
       </td>
       {(["views","searches","carts","wishlists"] as const).map(k=>{
         const pct=Math.round((u[k]/maxByKey(k))*100);
         return (
           <td key={k} style={{ ...td, textAlign:"right" }}>
             <div style={{ display:"flex",alignItems:"center",justifyContent:"flex-end",gap:"0.5rem" }}>
-              <div style={{ width:48,height:3,background:"rgba(255,255,255,0.06)",borderRadius:2,overflow:"hidden" }}><div style={{ height:"100%",width:`${pct}%`,background:PALETTE[k],borderRadius:2 }}/></div>
-              <span style={{ fontFamily:"monospace",color:"#fff",minWidth:20,textAlign:"right" }}>{u[k]}</span>
+              <div style={{ width:48,height:3,background:D.border,borderRadius:2,overflow:"hidden" }}><div style={{ height:"100%",width:`${pct}%`,background:PALETTE[k],borderRadius:2 }}/></div>
+              <span style={{ fontFamily:"monospace",color:D.text,minWidth:20,textAlign:"right" }}>{u[k]}</span>
             </div>
           </td>
         );
       })}
-      <td style={{ ...td,textAlign:"right",color:"#fff",fontWeight:600,fontFamily:"monospace" }}>{u.total}</td>
-      <td style={{ ...td,textAlign:"right",fontFamily:"monospace",fontSize:"0.72rem",color:"rgba(255,255,255,0.3)" }}>{u.last_active?new Date(u.last_active).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—"}</td>
-      <td style={{ ...td,paddingRight:"0.75rem",color:h?"rgba(255,255,255,0.5)":"rgba(255,255,255,0.15)" }}><ChevronRight size={14}/></td>
+      <td style={{ ...td,textAlign:"right",color:D.text,fontWeight:600,fontFamily:"monospace" }}>{u.total}</td>
+      <td style={{ ...td,textAlign:"right",fontFamily:"monospace",fontSize:"0.72rem",color:D.dim }}>{u.last_active?new Date(u.last_active).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—"}</td>
+      <td style={{ ...td,paddingRight:"0.75rem",color:h?D.muted:D.border }}><ChevronRight size={14}/></td>
     </tr>
   );
 }

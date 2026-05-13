@@ -43,6 +43,13 @@
       "when": 1776127838041,
       "tag": "0005_dusty_ultimates",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777832091998,
+      "tag": "0006_normal_longshot",
+      "breakpoints": true
     }
   ]
 }
