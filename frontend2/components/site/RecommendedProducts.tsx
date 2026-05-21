@@ -16,6 +16,81 @@ interface Product {
   averageRating: string;
 }
 
+/* ─── Animated gradient orbs (same pattern as login page) ───────────────────
+   Uses deep cyan tones so they're clearly visible in light mode too.
+─────────────────────────────────────────────────────────────────────────── */
+function RecsGradientBG() {
+  return (
+    <>
+      <style>{`
+        @keyframes recs-orb1 {
+          0%   { transform: translate(0%,  0%)    scale(1);    }
+          33%  { transform: translate(6%, -10%)   scale(1.12); }
+          66%  { transform: translate(-5%, 8%)    scale(0.92); }
+          100% { transform: translate(0%,  0%)    scale(1);    }
+        }
+        @keyframes recs-orb2 {
+          0%   { transform: translate(0%,  0%)    scale(1);    }
+          33%  { transform: translate(-9%, 7%)    scale(1.18); }
+          66%  { transform: translate(6%, -8%)    scale(0.88); }
+          100% { transform: translate(0%,  0%)    scale(1);    }
+        }
+        @keyframes recs-orb3 {
+          0%   { transform: translate(0%,  0%)    scale(1);    }
+          50%  { transform: translate(10%, 5%)    scale(1.08); }
+          100% { transform: translate(0%,  0%)    scale(1);    }
+        }
+        @keyframes recs-orb4 {
+          0%   { transform: translate(0%,  0%)    scale(1);    }
+          40%  { transform: translate(-7%, -6%)   scale(1.15); }
+          80%  { transform: translate(4%,  9%)    scale(0.94); }
+          100% { transform: translate(0%,  0%)    scale(1);    }
+        }
+      `}</style>
+
+      {/* Orb 1 — deep cyan, top-right */}
+      <div style={{
+        position: "absolute", top: "-20%", right: "-12%",
+        width: "55%", height: "70%",
+        background: "radial-gradient(ellipse, rgba(0,170,210,0.28) 0%, rgba(0,130,190,0.14) 45%, transparent 70%)",
+        filter: "blur(60px)",
+        animation: "recs-orb1 16s ease-in-out infinite",
+        pointerEvents: "none",
+      }} />
+
+      {/* Orb 2 — richer cyan, bottom-left */}
+      <div style={{
+        position: "absolute", bottom: "-18%", left: "-14%",
+        width: "60%", height: "65%",
+        background: "radial-gradient(ellipse, rgba(0,190,220,0.32) 0%, rgba(0,150,200,0.16) 45%, transparent 70%)",
+        filter: "blur(55px)",
+        animation: "recs-orb2 20s ease-in-out infinite",
+        pointerEvents: "none",
+      }} />
+
+      {/* Orb 3 — teal accent, bottom-right */}
+      <div style={{
+        position: "absolute", bottom: "5%", right: "-8%",
+        width: "40%", height: "45%",
+        background: "radial-gradient(ellipse, rgba(0,200,200,0.18) 0%, transparent 65%)",
+        filter: "blur(48px)",
+        animation: "recs-orb3 24s ease-in-out infinite",
+        pointerEvents: "none",
+      }} />
+
+      {/* Orb 4 — sky blue accent, top-left */}
+      <div style={{
+        position: "absolute", top: "10%", left: "-6%",
+        width: "35%", height: "40%",
+        background: "radial-gradient(ellipse, rgba(0,160,230,0.14) 0%, transparent 65%)",
+        filter: "blur(44px)",
+        animation: "recs-orb4 18s ease-in-out infinite",
+        pointerEvents: "none",
+      }} />
+    </>
+  );
+}
+
 export default function RecommendedProducts() {
   const { user, loading: authLoading } = useAuthStore();
   const [products, setProducts]        = useState<Product[]>([]);
@@ -64,83 +139,87 @@ export default function RecommendedProducts() {
   // ── GUEST: show login prompt ─────────────────────────────────────────────
   if (!user) {
     return (
-      <section style={{ padding: "4rem 2rem", overflow: "hidden" }}>
-        <SectionHeader subtitle="Sign in to unlock your personalised routine" />
+      <section style={{ padding: "4rem 2rem", overflow: "hidden", position: "relative" }}>
+        <RecsGradientBG />
 
-        <div style={{
-          maxWidth: 480,
-          margin: "0 auto",
-          textAlign: "center",
-          padding: "2.5rem 2rem",
-          border: "1px solid rgba(255,255,255,0.07)",
-          borderRadius: "1.25rem",
-          background: "rgba(255,255,255,0.02)",
-          backdropFilter: "blur(12px)",
-        }}>
-          {/* icon */}
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <SectionHeader subtitle="Sign in to unlock your personalised routine" />
+
           <div style={{
-            width: 56, height: 56, borderRadius: "50%",
-            background: "linear-gradient(135deg, var(--amber-honey), var(--cyan-soft))",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            margin: "0 auto 1.4rem", fontSize: "1.5rem",
+            maxWidth: 480,
+            margin: "0 auto",
+            textAlign: "center",
+            padding: "2.5rem 2rem",
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: "1.25rem",
+            background: "rgba(255,255,255,0.02)",
+            backdropFilter: "blur(12px)",
           }}>
-            ✦
-          </div>
+            {/* icon */}
+            <div style={{
+              width: 56, height: 56, borderRadius: "50%",
+              background: "linear-gradient(135deg, var(--amber-honey), var(--cyan-soft))",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 1.4rem", fontSize: "1.5rem",
+            }}>
+              ✦
+            </div>
 
-          <p style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "1.35rem", fontWeight: 300,
-            color: "var(--text-primary)",
-            marginBottom: "0.75rem", letterSpacing: "0.03em",
-          }}>
-            Your skin deserves better
-          </p>
+            <p style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "1.35rem", fontWeight: 300,
+              color: "var(--text-primary)",
+              marginBottom: "0.75rem", letterSpacing: "0.03em",
+            }}>
+              Your skin deserves better
+            </p>
 
-          <p style={{
-            fontSize: "0.82rem", color: "var(--text-muted)",
-            lineHeight: 1.7, marginBottom: "1.8rem",
-            letterSpacing: "0.03em",
-          }}>
-            Create a free account and we'll recommend products
-            matched to your skin type, concerns, and routine.
-          </p>
+            <p style={{
+              fontSize: "0.82rem", color: "var(--text-muted)",
+              lineHeight: 1.7, marginBottom: "1.8rem",
+              letterSpacing: "0.03em",
+            }}>
+              Create a free account and we'll recommend products
+              matched to your skin type, concerns, and routine.
+            </p>
 
-          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
-            <Link
-              href="/auth/register"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1.6rem",
-                background: "linear-gradient(135deg, var(--amber-honey), var(--amber-soft))",
-                color: "#000",
-                borderRadius: "2rem",
-                fontFamily: "var(--font-label)",
-                fontSize: "0.65rem",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Get Started
-            </Link>
-            <Link
-              href="/auth/login"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1.6rem",
-                border: "1px solid rgba(255,255,255,0.15)",
-                color: "var(--text-primary)",
-                borderRadius: "2rem",
-                fontFamily: "var(--font-label)",
-                fontSize: "0.65rem",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                textDecoration: "none",
-              }}
-            >
-              Sign In
-            </Link>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
+              <Link
+                href="/auth/register"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1.6rem",
+                  background: "linear-gradient(135deg, var(--amber-honey), var(--amber-soft))",
+                  color: "#000",
+                  borderRadius: "2rem",
+                  fontFamily: "var(--font-label)",
+                  fontSize: "0.65rem",
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Get Started
+              </Link>
+              <Link
+                href="/auth/login"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1.6rem",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "var(--text-primary)",
+                  borderRadius: "2rem",
+                  fontFamily: "var(--font-label)",
+                  fontSize: "0.65rem",
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                }}
+              >
+                Sign In
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -153,16 +232,22 @@ export default function RecommendedProducts() {
   const doubled = [...products, ...products];
 
   return (
-    <section style={{ padding: "4rem 0", overflow: "hidden" }}>
-      <SectionHeader subtitle="Based on your skin profile · hover to pause" />
+    <section style={{ padding: "4rem 0", overflow: "hidden", position: "relative" }}>
+      {/* ── Animated gradient orbs ── */}
+      <RecsGradientBG />
 
-      <div className="marquee-container">
-        <div className="marquee-track">
-          {doubled.map((p, i) => (
-            <div key={`${p.id}-${i}`} className="marquee-card">
-              <ProductCard product={p} />
-            </div>
-          ))}
+      {/* ── Content (sits above orbs) ── */}
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <SectionHeader subtitle="Based on your skin profile · hover to pause" />
+
+        <div className="marquee-container">
+          <div className="marquee-track">
+            {doubled.map((p, i) => (
+              <div key={`${p.id}-${i}`} className="marquee-card">
+                <ProductCard product={p} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

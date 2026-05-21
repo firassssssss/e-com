@@ -13,10 +13,12 @@ interface UserData {
 function getInitials(name: string) {
   return name.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase();
 }
-function getAccentColor(role: string) {
+function getAccentColor(role: string, isDark: boolean) {
   if (role==="super_admin") return { primary:"#FF5F1F", secondary:"rgba(255,95,31,0.15)",  border:"rgba(255,95,31,0.3)"  };
   if (role==="admin")       return { primary:"#FFAA00", secondary:"rgba(255,170,0,0.1)",   border:"rgba(255,170,0,0.25)" };
-  return                           { primary:"#00FFFF", secondary:"rgba(0,255,255,0.06)",  border:"rgba(0,255,255,0.15)" };
+  return isDark
+    ? { primary:"#00FFFF", secondary:"rgba(0,255,255,0.06)",  border:"rgba(0,255,255,0.15)" }
+    : { primary:"#0077AA", secondary:"rgba(0,119,170,0.07)",  border:"rgba(0,119,170,0.18)" };
 }
 
 function ActionBtn({ onClick, label, color, danger }: { onClick:()=>void; label:string; color:string; danger?:boolean }) {
@@ -30,10 +32,10 @@ function ActionBtn({ onClick, label, color, danger }: { onClick:()=>void; label:
   );
 }
 
-function UserCard({ user, isSuperAdmin, onPromote, onSuspend }: { user:UserData; isSuperAdmin:boolean; onPromote:(id:string,role:string)=>void; onSuspend:(id:string)=>void }) {
+function UserCard({ user, isSuperAdmin, isDark, onPromote, onSuspend }: { user:UserData; isSuperAdmin:boolean; isDark:boolean; onPromote:(id:string,role:string)=>void; onSuspend:(id:string)=>void }) {
   const D = useD();
   const [hovered, setHovered] = useState(false);
-  const accent = getAccentColor(user.role);
+  const accent = getAccentColor(user.role, isDark);
   const initials = getInitials(user.name);
   const joinDate = new Date(user.createdAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
   const isElevated = user.role==="admin"||user.role==="super_admin";
@@ -118,6 +120,7 @@ export default function AdminUsersPage() {
   },[users,query,filterRole]);
 
   const isSuperAdmin = currentUserRole==="super_admin";
+  const isDark = D.bg === "#0A0A0F";
   const adminsCount  = users.filter(u=>u.role==="admin"||u.role==="super_admin").length;
   const verifiedCount = users.filter(u=>u.emailVerified).length;
 
@@ -136,7 +139,7 @@ export default function AdminUsersPage() {
       <div style={{ marginBottom:"2.5rem" }}>
         <div style={{ display:"flex",alignItems:"center",gap:"0.75rem",marginBottom:"0.5rem" }}>
           <div style={{ width:"24px",height:"1px",background:D.orange }} />
-          <p style={{ fontFamily:D.font,fontSize:"0.7rem",letterSpacing:"0.35em",textTransform:"uppercase" as const,color:D.orange,opacity:0.7 }}>Admin · Access Control</p>
+          <p style={{ fontFamily:D.font,fontSize:"0.7rem",letterSpacing:"0.35em",textTransform:"uppercase" as const,color:D.orange,opacity:0.7 }}>Admin � Access Control</p>
         </div>
         <h1 style={{ fontFamily:D.font,fontSize:"1.3rem",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase" as const,color:D.text,marginBottom:"0.3rem" }}>User Management</h1>
         <p style={{ fontFamily:D.font,fontSize:"0.72rem",letterSpacing:"0.18em",textTransform:"uppercase" as const,color:D.dim }}>{users.length} registered accounts</p>
@@ -155,9 +158,9 @@ export default function AdminUsersPage() {
         <div style={{ display:"flex",alignItems:"center",gap:"0.75rem",background:D.panelB,border:`1px solid ${searchFocused?`${D.orange}66`:D.border}`,padding:"0.65rem 1rem",flex:1,maxWidth:"380px",transition:"border-color 0.2s" }}>
           <Search size={13} color={searchFocused?D.orange:D.dim} style={{flexShrink:0}} />
           <input style={{ background:"none",border:"none",outline:"none",color:D.text,fontFamily:D.font,fontSize:"0.78rem",letterSpacing:"0.12em",textTransform:"uppercase" as const,flex:1,minWidth:0 }}
-            placeholder="Search users…" value={query} onChange={e=>setQuery(e.target.value)}
+            placeholder="Search users�" value={query} onChange={e=>setQuery(e.target.value)}
             onFocus={()=>setSearchFocused(true)} onBlur={()=>setSearchFocused(false)} />
-          {query&&<button onClick={()=>setQuery("")} style={{ background:"none",border:"none",cursor:"pointer",color:D.dim,fontSize:"1rem",padding:0,lineHeight:1 }}>×</button>}
+          {query&&<button onClick={()=>setQuery("")} style={{ background:"none",border:"none",cursor:"pointer",color:D.dim,fontSize:"1rem",padding:0,lineHeight:1 }}>�</button>}
         </div>
         <div style={{ display:"flex",gap:0,border:`1px solid ${D.border}` }}>
           {(["all","admin","user"] as const).map((f,i)=>(
@@ -175,7 +178,7 @@ export default function AdminUsersPage() {
         </div>
       ):(
         <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:"1px",background:D.border,border:`1px solid ${D.border}` }}>
-          {filtered.map(user=><UserCard key={user.id} user={user} isSuperAdmin={isSuperAdmin} onPromote={promoteUser} onSuspend={suspendUser} />)}
+          {filtered.map(user=><UserCard key={user.id} user={user} isSuperAdmin={isSuperAdmin} isDark={isDark} onPromote={promoteUser} onSuspend={suspendUser} />)}
         </div>
       )}
     </div>

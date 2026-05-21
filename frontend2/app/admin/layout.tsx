@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -68,7 +68,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <div style={{ padding:"0 2rem 2rem", borderBottom:`1px solid ${border}`, marginBottom:"1.5rem" }}>
           <Link href="/" style={{ textDecoration:"none" }}>
             <p style={{ fontFamily:"'Syncopate',sans-serif", fontSize:"0.85rem", letterSpacing:"0.3em", color:mainText, fontWeight:700 }}>
-              LUM<span style={{ color:"#00FFFF" }}>I</span>NA
+              LUM<span style={{ color: dk ? "#00FFFF" : "#0077AA" }}>I</span>NA
             </p>
           </Link>
           <p style={{ fontFamily:"'Syncopate',sans-serif", fontSize:"0.5rem", letterSpacing:"0.2em", textTransform:"uppercase", color:textMuted, marginTop:"0.5rem" }}>

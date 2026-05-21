@@ -1,208 +1,3 @@
-﻿// "use client";
-
-// import { useState } from "react";
-// import Link from "next/link";
-// import { useRouter } from "next/navigation";
-// import { useForm } from "react-hook-form";
-// import { zodResolver } from "@hookform/resolvers/zod";
-// import { z } from "zod";
-// import { authApi } from "@/lib/api";
-// import { TextField, Button, CircularProgress, Alert } from "@mui/material";
-// import { Eye, EyeOff } from "lucide-react";
-
-// const schema = z.object({
-//   name: z.string().min(2, "Name must be at least 2 characters"),
-//   email: z.string().email("Invalid email address"),
-//   password: z.string().min(6, "Password must be at least 6 characters"),
-// });
-
-// type FormData = z.infer<typeof schema>;
-
-// export default function RegisterPage() {
-//   const router = useRouter();
-//   const [showPass, setShowPass] = useState(false);
-//   const [error, setError] = useState("");
-//   const [loading, setLoading] = useState(false);
-
-//   const {
-//     register,
-//     handleSubmit,
-//     formState: { errors },
-//   } = useForm<FormData>({
-//     resolver: zodResolver(schema),
-//   });
-
-//   const onSubmit = async (data: FormData) => {
-//     setError("");
-//     setLoading(true);
-//     try {
-//       await authApi.register(data);
-//       router.push("/auth/login?registered=true");
-//     } catch (err: any) {
-//       setError(err?.response?.data?.message || "Registration failed");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen grid md:grid-cols-2">
-//       {/* Left — decorative panel (identical to login) */}
-//       <div className="hidden md:flex flex-col justify-between bg-[#1A1410] p-14 relative overflow-hidden">
-//         <div className="absolute inset-0">
-//           <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-[#C4786A]/10 blur-3xl translate-x-1/2 -translate-y-1/2" />
-//           <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-[#6B4F3A]/20 blur-3xl -translate-x-1/2 translate-y-1/2" />
-//           <svg className="absolute inset-0 w-full h-full opacity-5" viewBox="0 0 600 800">
-//             <line x1="0" y1="200" x2="600" y2="200" stroke="#E8C4B8" strokeWidth="0.5" />
-//             <line x1="0" y1="400" x2="600" y2="400" stroke="#E8C4B8" strokeWidth="0.5" />
-//             <line x1="0" y1="600" x2="600" y2="600" stroke="#E8C4B8" strokeWidth="0.5" />
-//             <line x1="200" y1="0" x2="200" y2="800" stroke="#E8C4B8" strokeWidth="0.5" />
-//             <line x1="400" y1="0" x2="400" y2="800" stroke="#E8C4B8" strokeWidth="0.5" />
-//           </svg>
-//         </div>
-
-//         <div className="relative z-10">
-//           <Link href="/" className="font-display text-3xl font-light tracking-widest text-[#FAF7F2]">
-//             Lumière
-//           </Link>
-//         </div>
-
-//         <div className="relative z-10">
-//           <blockquote className="font-display text-4xl font-light text-[#FAF7F2] leading-snug mb-6">
-//             "Begin your<br />beauty journey."
-//           </blockquote>
-//           <p className="text-[#E8C4B8]/60 text-sm tracking-wider">
-//             Personalized recommendations await.
-//           </p>
-//         </div>
-
-//         <div className="relative z-10 flex gap-3">
-//           {["Hydrating", "Brightening", "Anti-aging", "Sensitive"].map((tag) => (
-//             <span key={tag} className="text-xs tracking-widest text-[#E8C4B8]/50 border border-[#E8C4B8]/20 px-3 py-1">
-//               {tag}
-//             </span>
-//           ))}
-//         </div>
-//       </div>
-
-//       {/* Right — registration form */}
-//       <div className="flex items-center justify-center px-6 py-16 bg-[#FAF7F2]">
-//         <div className="w-full max-w-[400px]">
-//           {/* Mobile logo */}
-//           <div className="md:hidden text-center mb-10">
-//             <Link href="/" className="font-display text-3xl font-light tracking-widest text-[#1A1410]">
-//               Lumière
-//             </Link>
-//           </div>
-
-//           <div className="animate-fade-up">
-//             <h1 className="font-display text-4xl font-light text-[#1A1410] mb-2">
-//               Create account
-//             </h1>
-//             <p className="text-[#6B4F3A]/70 text-sm tracking-wide mb-10">
-//               Join Lumière for personalized beauty
-//             </p>
-//           </div>
-
-//           {error && (
-//             <Alert severity="error" className="mb-6 animate-fade-up" sx={{ borderRadius: 1 }}>
-//               {error}
-//             </Alert>
-//           )}
-
-//           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-//             <div className="animate-fade-up delay-100">
-//               <TextField
-//                 {...register("name")}
-//                 label="Full name"
-//                 type="text"
-//                 fullWidth
-//                 variant="outlined"
-//                 error={!!errors.name}
-//                 helperText={errors.name?.message}
-//                 size="medium"
-//               />
-//             </div>
-
-//             <div className="animate-fade-up delay-200">
-//               <TextField
-//                 {...register("email")}
-//                 label="Email address"
-//                 type="email"
-//                 fullWidth
-//                 variant="outlined"
-//                 error={!!errors.email}
-//                 helperText={errors.email?.message}
-//               />
-//             </div>
-
-//             <div className="animate-fade-up delay-200 relative">
-//               <TextField
-//                 {...register("password")}
-//                 label="Password"
-//                 type={showPass ? "text" : "password"}
-//                 fullWidth
-//                 variant="outlined"
-//                 error={!!errors.password}
-//                 helperText={errors.password?.message}
-//                 InputProps={{
-//                   endAdornment: (
-//                     <button
-//                       type="button"
-//                       onClick={() => setShowPass(!showPass)}
-//                       className="text-[#6B4F3A]/50 hover:text-[#C4786A] transition-colors p-1"
-//                     >
-//                       {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-//                     </button>
-//                   ),
-//                 }}
-//               />
-//             </div>
-
-//             <div className="animate-fade-up delay-300 mt-2">
-//               <Button
-//                 type="submit"
-//                 variant="contained"
-//                 fullWidth
-//                 size="large"
-//                 disabled={loading}
-//                 sx={{
-//                   py: 1.5,
-//                   bgcolor: "#1A1410",
-//                   "&:hover": { bgcolor: "#C4786A" },
-//                   transition: "background-color 0.3s ease",
-//                   letterSpacing: "0.12em",
-//                   fontSize: "0.8rem",
-//                 }}
-//               >
-//                 {loading ? (
-//                   <CircularProgress size={20} sx={{ color: "#FAF7F2" }} />
-//                 ) : (
-//                   "SIGN UP"
-//                 )}
-//               </Button>
-//             </div>
-//           </form>
-
-//           <div className="animate-fade-up delay-400 mt-8 text-center">
-//             <div className="flex items-center gap-4 mb-8">
-//               <div className="flex-1 h-px bg-[#E0D5C8]" />
-//               <span className="text-xs text-[#6B4F3A]/40 tracking-widest">OR</span>
-//               <div className="flex-1 h-px bg-[#E0D5C8]" />
-//             </div>
-
-//             <p className="text-sm text-[#6B4F3A]/70">
-//               Already have an account?{" "}
-//               <Link href="/auth/login" className="text-[#C4786A] font-medium hover:underline">
-//                 Sign in
-//               </Link>
-//             </p>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 "use client";
 
 import { useState } from "react";
@@ -213,17 +8,100 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { authApi } from "@/lib/api";
+import { useTheme } from "@/components/ui/ThemeContext";
 
 const schema = z.object({
   name:     z.string().min(2, "Name must be at least 2 characters"),
   email:    z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
-
 type FormData = z.infer<typeof schema>;
+
+/* ── Animated gradient orb component ──────────────────────────────────── */
+function AnimatedGradientBG({ isDark }: { isDark: boolean }) {
+  return (
+    <>
+      <style>{`
+        @keyframes rg-orb1 {
+          0%   { transform: translate(0%, 0%)   scale(1); }
+          33%  { transform: translate(-9%, 11%) scale(1.12); }
+          66%  { transform: translate(7%, -8%)  scale(0.92); }
+          100% { transform: translate(0%, 0%)   scale(1); }
+        }
+        @keyframes rg-orb2 {
+          0%   { transform: translate(0%, 0%)    scale(1); }
+          33%  { transform: translate(10%, -10%) scale(1.18); }
+          66%  { transform: translate(-6%, 8%)   scale(0.88); }
+          100% { transform: translate(0%, 0%)    scale(1); }
+        }
+        @keyframes rg-orb3 {
+          0%   { transform: translate(0%, 0%)   scale(1); }
+          50%  { transform: translate(-11%, 6%) scale(1.1); }
+          100% { transform: translate(0%, 0%)   scale(1); }
+        }
+        @keyframes rg-orb4 {
+          0%   { transform: translate(0%, 0%)    scale(1); }
+          40%  { transform: translate(8%, -9%)   scale(1.15); }
+          80%  { transform: translate(-5%, 10%)  scale(0.9); }
+          100% { transform: translate(0%, 0%)    scale(1); }
+        }
+      `}</style>
+
+      {/* Orb 1 — orange, top-left (register uses amber side, so orbs flipped) */}
+      <div style={{
+        position: 'absolute', top: '-18%', left: '-18%',
+        width: '70%', height: '70%',
+        background: isDark
+          ? 'radial-gradient(ellipse, rgba(255,95,31,0.22) 0%, rgba(255,140,0,0.10) 45%, transparent 70%)'
+          : 'radial-gradient(ellipse, rgba(255,95,31,0.18) 0%, rgba(255,140,0,0.08) 45%, transparent 70%)',
+        filter: 'blur(55px)',
+        animation: 'rg-orb1 16s ease-in-out infinite',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Orb 2 — cyan, bottom-right */}
+      <div style={{
+        position: 'absolute', bottom: '-20%', right: '-20%',
+        width: '72%', height: '72%',
+        background: isDark
+          ? 'radial-gradient(ellipse, rgba(0,255,255,0.18) 0%, rgba(0,180,220,0.08) 45%, transparent 70%)'
+          : 'radial-gradient(ellipse, rgba(0,210,230,0.16) 0%, rgba(0,150,200,0.07) 45%, transparent 70%)',
+        filter: 'blur(60px)',
+        animation: 'rg-orb2 20s ease-in-out infinite',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Orb 3 — amber accent, bottom-left */}
+      <div style={{
+        position: 'absolute', bottom: '8%', left: '-8%',
+        width: '42%', height: '42%',
+        background: isDark
+          ? 'radial-gradient(ellipse, rgba(255,180,50,0.10) 0%, transparent 65%)'
+          : 'radial-gradient(ellipse, rgba(255,160,30,0.09) 0%, transparent 65%)',
+        filter: 'blur(45px)',
+        animation: 'rg-orb3 24s ease-in-out infinite',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Orb 4 — cyan accent, top-right */}
+      <div style={{
+        position: 'absolute', top: '12%', right: '-6%',
+        width: '38%', height: '38%',
+        background: isDark
+          ? 'radial-gradient(ellipse, rgba(0,255,255,0.08) 0%, transparent 65%)'
+          : 'radial-gradient(ellipse, rgba(0,200,220,0.07) 0%, transparent 65%)',
+        filter: 'blur(40px)',
+        animation: 'rg-orb4 19s ease-in-out infinite',
+        pointerEvents: 'none',
+      }} />
+    </>
+  );
+}
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [showPass, setShowPass] = useState(false);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
@@ -245,6 +123,29 @@ export default function RegisterPage() {
     }
   };
 
+  /* ── shared style tokens (theme-aware) ─────────────────────────────── */
+  const inputBase: React.CSSProperties = {
+    width: '100%',
+    background: 'var(--ap-input-bg)',
+    border: `1px solid var(--ap-input-border)`,
+    color: 'var(--ap-text)',
+    fontSize: '0.9rem',
+    padding: '1rem 1.2rem',
+    outline: 'none',
+    fontFamily: "'DM Sans', sans-serif",
+    transition: 'border-color 0.3s',
+  };
+  const inputFocus  = (e: React.FocusEvent<HTMLInputElement>) =>
+    (e.currentTarget.style.borderColor = 'var(--ap-accent-glow)');
+  const inputBlur   = (e: React.FocusEvent<HTMLInputElement>, hasErr: boolean) =>
+    (e.currentTarget.style.borderColor = hasErr ? 'rgba(255,95,31,0.6)' : 'var(--ap-input-border)');
+  const labelStyle: React.CSSProperties = {
+    fontFamily: "'Syncopate', sans-serif",
+    fontSize: '0.55rem', letterSpacing: '0.2em',
+    textTransform: 'uppercase', color: 'var(--ap-text-muted)',
+    display: 'block', marginBottom: '0.5rem',
+  };
+
   return (
     <div style={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
 
@@ -255,58 +156,26 @@ export default function RegisterPage() {
         display: 'flex', flexDirection: 'column',
         justifyContent: 'space-between', padding: '4rem',
       }} className="hidden md:flex">
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(135deg, rgba(7,5,10,0.85) 0%, rgba(7,5,10,0.45) 50%, rgba(7,5,10,0.8) 100%)',
-        }} />
-
-        {/* Amber glow */}
-        <div style={{
-          position: 'absolute', bottom: '20%', right: '20%',
-          width: '350px', height: '350px',
-          background: 'radial-gradient(circle, rgba(255,95,31,0.1) 0%, transparent 70%)',
-          borderRadius: '50%',
-        }} />
-
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(7,5,10,0.85) 0%, rgba(7,5,10,0.45) 50%, rgba(7,5,10,0.8) 100%)' }} />
+        <div style={{ position: 'absolute', bottom: '20%', right: '20%', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(255,95,31,0.1) 0%, transparent 70%)', borderRadius: '50%' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <p style={{
-              fontFamily: "'Syncopate', sans-serif",
-              fontSize: '0.85rem', letterSpacing: '0.3em',
-              fontWeight: 700, color: '#fff',
-            }}>
+            <p style={{ fontFamily: "'Syncopate', sans-serif", fontSize: '0.85rem', letterSpacing: '0.3em', fontWeight: 700, color: '#fff' }}>
               LUM<span style={{ color: '#00FFFF' }}>I</span>NA
             </p>
           </Link>
         </div>
-
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <blockquote style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 'clamp(1.8rem, 3.5vw, 3rem)',
-            fontWeight: 300, fontStyle: 'italic',
-            color: '#fff', lineHeight: 1.3, marginBottom: '1.5rem',
-          }}>
+          <blockquote style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(1.8rem, 3.5vw, 3rem)', fontWeight: 300, fontStyle: 'italic', color: '#fff', lineHeight: 1.3, marginBottom: '1.5rem' }}>
             "Begin your<br />beauty journey."
           </blockquote>
-          <p style={{
-            fontFamily: "'Syncopate', sans-serif",
-            fontSize: '0.55rem', letterSpacing: '0.2em',
-            textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
-          }}>
+          <p style={{ fontFamily: "'Syncopate', sans-serif", fontSize: '0.55rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
             Personalized recommendations await.
           </p>
         </div>
-
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {["Hydrating", "Brightening", "Anti-aging", "Sensitive"].map((tag) => (
-            <span key={tag} style={{
-              fontFamily: "'Syncopate', sans-serif",
-              fontSize: '0.5rem', letterSpacing: '0.15em',
-              textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              padding: '0.4rem 0.8rem',
-            }}>
+            <span key={tag} style={{ fontFamily: "'Syncopate', sans-serif", fontSize: '0.5rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.8rem' }}>
               {tag}
             </span>
           ))}
@@ -315,49 +184,37 @@ export default function RegisterPage() {
 
       {/* ─── Right: Register form ─── */}
       <div style={{
-        background: '#07050A',
+        position: 'relative',
+        background: 'var(--ap-bg)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '3rem 2rem',
+        overflow: 'hidden',
       }}>
-        <div style={{ width: '100%', maxWidth: '400px' }}>
+        {/* ── Animated gradient background ── */}
+        <AnimatedGradientBG isDark={isDark} />
 
+        <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px' }}>
+
+          {/* Mobile logo */}
           <div className="md:hidden" style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
             <Link href="/" style={{ textDecoration: 'none' }}>
-              <p style={{
-                fontFamily: "'Syncopate', sans-serif",
-                fontSize: '0.85rem', letterSpacing: '0.3em',
-                fontWeight: 700, color: '#fff',
-              }}>
-                LUM<span style={{ color: '#00FFFF' }}>I</span>NA
+              <p style={{ fontFamily: "'Syncopate', sans-serif", fontSize: '0.85rem', letterSpacing: '0.3em', fontWeight: 700, color: 'var(--ap-text)' }}>
+                LUM<span style={{ color: 'var(--ap-accent)' }}>I</span>NA
               </p>
             </Link>
           </div>
 
           <div style={{ marginBottom: '2.5rem' }}>
-            <p style={{
-              fontFamily: "'Syncopate', sans-serif",
-              fontSize: '0.55rem', letterSpacing: '0.3em',
-              textTransform: 'uppercase', color: '#FF5F1F',
-              marginBottom: '0.75rem', opacity: 0.8,
-            }}>
+            <p style={{ fontFamily: "'Syncopate', sans-serif", fontSize: '0.55rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#FF5F1F', marginBottom: '0.75rem', opacity: 0.9 }}>
               Begin your ritual
             </p>
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '3rem', fontWeight: 300,
-              color: '#fff', lineHeight: 1.1,
-            }}>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '3rem', fontWeight: 300, color: 'var(--ap-text)', lineHeight: 1.1 }}>
               Create account
             </h1>
           </div>
 
           {error && (
-            <div style={{
-              background: 'rgba(255,95,31,0.08)',
-              border: '1px solid rgba(255,95,31,0.3)',
-              color: '#F89880', padding: '0.9rem 1.2rem',
-              fontSize: '0.85rem', marginBottom: '1.5rem',
-            }}>
+            <div style={{ background: 'rgba(255,95,31,0.08)', border: '1px solid rgba(255,95,31,0.3)', color: '#F89880', padding: '0.9rem 1.2rem', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
               {error}
             </div>
           )}
@@ -366,140 +223,65 @@ export default function RegisterPage() {
 
             {/* Name */}
             <div>
-              <label style={{
-                fontFamily: "'Syncopate', sans-serif",
-                fontSize: '0.55rem', letterSpacing: '0.2em',
-                textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
-                display: 'block', marginBottom: '0.5rem',
-              }}>
-                Full name
-              </label>
+              <label style={labelStyle}>Full name</label>
               <input
-                {...register("name")}
-                type="text"
-                placeholder="Your name"
-                style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: errors.name ? '1px solid rgba(255,95,31,0.6)' : '1px solid rgba(255,255,255,0.06)',
-                  color: '#fff', fontSize: '0.9rem',
-                  padding: '1rem 1.2rem', outline: 'none',
-                  fontFamily: "'DM Sans', sans-serif",
-                  transition: 'border-color 0.3s',
-                }}
-                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(0,255,255,0.4)')}
-                onBlur={e => (e.currentTarget.style.borderColor = errors.name ? 'rgba(255,95,31,0.6)' : 'rgba(255,255,255,0.06)')}
+                {...register("name")} type="text" placeholder="Your name"
+                style={{ ...inputBase, border: errors.name ? '1px solid rgba(255,95,31,0.6)' : `1px solid var(--ap-input-border)` }}
+                onFocus={inputFocus}
+                onBlur={e => inputBlur(e, !!errors.name)}
               />
               {errors.name && <p style={{ fontSize: '0.75rem', color: '#F89880', marginTop: '0.4rem' }}>{errors.name.message}</p>}
             </div>
 
             {/* Email */}
             <div>
-              <label style={{
-                fontFamily: "'Syncopate', sans-serif",
-                fontSize: '0.55rem', letterSpacing: '0.2em',
-                textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
-                display: 'block', marginBottom: '0.5rem',
-              }}>
-                Email address
-              </label>
+              <label style={labelStyle}>Email address</label>
               <input
-                {...register("email")}
-                type="email"
-                placeholder="you@example.com"
-                style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: errors.email ? '1px solid rgba(255,95,31,0.6)' : '1px solid rgba(255,255,255,0.06)',
-                  color: '#fff', fontSize: '0.9rem',
-                  padding: '1rem 1.2rem', outline: 'none',
-                  fontFamily: "'DM Sans', sans-serif",
-                  transition: 'border-color 0.3s',
-                }}
-                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(0,255,255,0.4)')}
-                onBlur={e => (e.currentTarget.style.borderColor = errors.email ? 'rgba(255,95,31,0.6)' : 'rgba(255,255,255,0.06)')}
+                {...register("email")} type="email" placeholder="you@example.com"
+                style={{ ...inputBase, border: errors.email ? '1px solid rgba(255,95,31,0.6)' : `1px solid var(--ap-input-border)` }}
+                onFocus={inputFocus}
+                onBlur={e => inputBlur(e, !!errors.email)}
               />
               {errors.email && <p style={{ fontSize: '0.75rem', color: '#F89880', marginTop: '0.4rem' }}>{errors.email.message}</p>}
             </div>
 
             {/* Password */}
             <div>
-              <label style={{
-                fontFamily: "'Syncopate', sans-serif",
-                fontSize: '0.55rem', letterSpacing: '0.2em',
-                textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
-                display: 'block', marginBottom: '0.5rem',
-              }}>
-                Password
-              </label>
+              <label style={labelStyle}>Password</label>
               <div style={{ position: 'relative' }}>
                 <input
-                  {...register("password")}
-                  type={showPass ? "text" : "password"}
-                  placeholder="••••••••"
-                  style={{
-                    width: '100%',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: errors.password ? '1px solid rgba(255,95,31,0.6)' : '1px solid rgba(255,255,255,0.06)',
-                    color: '#fff', fontSize: '0.9rem',
-                    padding: '1rem 3rem 1rem 1.2rem', outline: 'none',
-                    fontFamily: "'DM Sans', sans-serif",
-                    transition: 'border-color 0.3s',
-                  }}
-                  onFocus={e => (e.currentTarget.style.borderColor = 'rgba(0,255,255,0.4)')}
-                  onBlur={e => (e.currentTarget.style.borderColor = errors.password ? 'rgba(255,95,31,0.6)' : 'rgba(255,255,255,0.06)')}
+                  {...register("password")} type={showPass ? "text" : "password"} placeholder="••••••••"
+                  style={{ ...inputBase, padding: '1rem 3rem 1rem 1.2rem', border: errors.password ? '1px solid rgba(255,95,31,0.6)' : `1px solid var(--ap-input-border)` }}
+                  onFocus={inputFocus}
+                  onBlur={e => inputBlur(e, !!errors.password)}
                 />
-                <button type="button" onClick={() => setShowPass(!showPass)} style={{
-                  position: 'absolute', right: '1rem', top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none', border: 'none',
-                  color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
-                }}>
+                <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--ap-text-faint)', cursor: 'pointer', transition: 'color 0.3s' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--ap-accent)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--ap-text-faint)')}>
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
               {errors.password && <p style={{ fontSize: '0.75rem', color: '#F89880', marginTop: '0.4rem' }}>{errors.password.message}</p>}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%', background: '#FF5F1F', border: 'none',
-                color: '#000',
-                fontFamily: "'Syncopate', sans-serif",
-                fontSize: '0.65rem', letterSpacing: '0.2em',
-                textTransform: 'uppercase', padding: '1.1rem',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1, transition: 'all 0.3s',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-              }}
+            <button type="submit" disabled={loading} style={{ width: '100%', background: '#FF5F1F', border: 'none', color: '#fff', fontFamily: "'Syncopate', sans-serif", fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', padding: '1.1rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
               onMouseEnter={e => { if (!loading) e.currentTarget.style.boxShadow = '0 0 40px rgba(255,95,31,0.45)' }}
-              onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none' }}
-            >
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none' }}>
               {loading ? <Loader2 size={16} className="animate-spin" /> : "Create Account"}
             </button>
           </form>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '2rem 0' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-            <span style={{
-              fontFamily: "'Syncopate', sans-serif", fontSize: '0.5rem',
-              letterSpacing: '0.3em', textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.2)',
-            }}>or</span>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--ap-divider)' }} />
+            <span style={{ fontFamily: "'Syncopate', sans-serif", fontSize: '0.5rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--ap-text-faint)' }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--ap-divider)' }} />
           </div>
 
-          <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)' }}>
+          <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--ap-text-muted)' }}>
             Already have an account?{" "}
-            <Link href="/auth/login" style={{
-              color: '#F89880', textDecoration: 'none',
-              fontWeight: 500, transition: 'color 0.3s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#FF5F1F')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#F89880')}
-            >
+            <Link href="/auth/login" style={{ color: '#F89880', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#FF5F1F')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#F89880')}>
               Sign in
             </Link>
           </p>
